@@ -21,6 +21,15 @@ class Plugin_Core
         global $wpdb;
         $this->table_name = $wpdb->prefix . 'acr_abandoned_carts';
 
+        // Activation hook
+        register_activation_hook(__FILE__, array($this, 'activate'));
+
+        // Deactivation hook
+        register_deactivation_hook(__FILE__, array($this, 'deactivate'));
+
+        // Check and create table if needed on admin init
+        add_action('admin_init', array($this, 'check_database_table'));
+
         // Admin menu
         add_action('admin_menu', array($this, 'add_admin_menu'));
     }
@@ -239,6 +248,8 @@ class Plugin_Core
 
     /**
      * Database table creation for Auto Cart Recovery plugin.
+     * 
+     * @return void
      */
     private function create_database_table()
     {
@@ -269,5 +280,56 @@ class Plugin_Core
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+    }
+
+    /**
+     * Create database table and schedule
+     * 
+     * @return void
+     */
+    public function activate()
+    {
+        // Create database table
+        $this->create_database_table();
+
+        // Schedule cron job
+        if (!wp_next_scheduled('acr_check_abandoned_carts')) {
+            wp_schedule_event(time(), 'hourly', 'acr_check_abandoned_carts');
+        }
+    }
+
+    /**
+     * Clear scheduled hook on deactivation.
+     * 
+     * @return void
+     */
+    public function deactivate()
+    {
+        wp_clear_scheduled_hook('acr_check_abandoned_carts');
+    }
+
+    /**
+     * Database table check and creation if missing.
+     * 
+     * @return void
+     */
+    public function check_database_table()
+    {
+        global $wpdb;
+
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$this->table_name}'");
+
+        if ($table_exists !== $this->table_name) {
+            // Table doesn't exist, create it
+            $this->create_database_table();
+
+            // Show admin notice
+            add_action('admin_notices', function () {
+                echo '<div class="notice notice-success is-dismissible">';
+                echo '<p><strong>Auto Cart Recovery:</strong> Database table created successfully!</p>';
+                echo '</div>';
+            });
+        }
     }
 }
