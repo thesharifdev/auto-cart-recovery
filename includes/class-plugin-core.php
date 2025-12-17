@@ -32,6 +32,27 @@ class Plugin_Core
 
         // Admin menu
         add_action('admin_menu', array($this, 'add_admin_menu'));
+
+        // Cart tracking on plugin init
+        add_action('init', array($this, 'cart_tracking'));
+        // Track cart updates
+        add_action('woocommerce_add_to_cart', array($this, 'track_cart'), 10, 6);
+        add_action('woocommerce_cart_item_removed', array($this, 'track_cart_simple'), 10);
+        add_action('woocommerce_update_cart_action_cart_updated', array($this, 'track_cart_simple'), 10);
+        
+        // Track user email during checkout
+        add_action('woocommerce_checkout_update_order_review', array($this, 'capture_email_from_checkout'));
+        
+        // Clear cart on order completion
+        add_action('woocommerce_thankyou', array($this, 'clear_abandoned_cart'), 10, 1);
+        add_action('woocommerce_order_status_completed', array($this, 'clear_abandoned_cart'), 10, 1);
+        add_action('woocommerce_order_status_processing', array($this, 'clear_abandoned_cart'), 10, 1);
+        
+        // Schedule recovery emails
+        add_action('acr_check_abandoned_carts', array($this, 'check_and_send_recovery_emails'));
+        
+        // Recovery link handler
+        add_action('template_redirect', array($this, 'handle_recovery_link'));
     }
 
     public function add_admin_menu()
@@ -246,6 +267,26 @@ class Plugin_Core
 <?php
     }
 
+    private function get_session_id() {
+        if (isset($_COOKIE['acr_session_id'])) {
+            return sanitize_text_field($_COOKIE['acr_session_id']);
+        }
+        
+        $session_id = wp_generate_password(32, false);
+        setcookie('acr_session_id', $session_id, time() + (86400 * 30), '/');
+        return $session_id;
+    }
+
+    /**
+     * Cart tracking
+     */
+    public function cart_tracking() {
+        // Track cart for logged-in users
+        if (is_user_logged_in() && !is_admin()) {
+            add_action('wp_footer', array($this, 'track_cart_simple'));
+        }
+    }
+
     /**
      * Database table creation for Auto Cart Recovery plugin.
      * 
@@ -330,6 +371,249 @@ class Plugin_Core
                 echo '<p><strong>Auto Cart Recovery:</strong> Database table created successfully!</p>';
                 echo '</div>';
             });
+        }
+    }
+     public function track_cart($cart_item_key = null, $product_id = null, $quantity = null, $variation_id = null, $variation = null, $cart_item_data = null) {
+        $this->track_cart_simple();
+    }
+    
+    public function track_cart_simple() {
+        if (is_admin()) {
+            return;
+        }
+        
+        global $wpdb;
+        
+        $cart = WC()->cart;
+        
+        if (!$cart || $cart->is_empty()) {
+            return;
+        }
+        
+        $session_id = $this->get_session_id();
+        $user_id = get_current_user_id();
+        $email = $this->get_user_email();
+        
+        $cart_data = array(
+            'cart_contents' => $cart->get_cart(),
+            'cart_totals' => array(
+                'subtotal' => $cart->get_subtotal(),
+                'total' => $cart->get_total('raw')
+            )
+        );
+        
+        $cart_total = $cart->get_total('raw');
+        
+        $existing = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$this->table_name} WHERE session_id = %s AND status = 'active'",
+            $session_id
+        ));
+        
+        $data = array(
+            'cart_data' => serialize($cart_data),
+            'cart_total' => $cart_total,
+            'updated_at' => current_time('mysql')
+        );
+        
+        if ($email) {
+            $data['email'] = $email;
+        }
+        
+        if ($user_id) {
+            $data['user_id'] = $user_id;
+        }
+        
+        if ($existing) {
+            $wpdb->update(
+                $this->table_name,
+                $data,
+                array('id' => $existing->id),
+                array('%s', '%f', '%s'),
+                array('%d')
+            );
+        } else {
+            $data['session_id'] = $session_id;
+            $data['created_at'] = current_time('mysql');
+            $data['status'] = 'active';
+            $data['recovery_token'] = wp_generate_password(32, false);
+            
+            $wpdb->insert(
+                $this->table_name,
+                $data,
+                array('%s', '%s', '%f', '%s', '%s', '%s')
+            );
+        }
+    }
+    
+    public function capture_email_from_checkout($post_data) {
+        parse_str($post_data, $data);
+        
+        if (isset($data['billing_email']) && is_email($data['billing_email'])) {
+            global $wpdb;
+            
+            $session_id = $this->get_session_id();
+            $email = sanitize_email($data['billing_email']);
+            
+            $wpdb->update(
+                $this->table_name,
+                array('email' => $email, 'updated_at' => current_time('mysql')),
+                array('session_id' => $session_id, 'status' => 'active'),
+                array('%s', '%s'),
+                array('%s', '%s')
+            );
+        }
+    }
+    
+    public function clear_abandoned_cart($order_id) {
+        global $wpdb;
+        
+        $session_id = $this->get_session_id();
+        
+        $wpdb->update(
+            $this->table_name,
+            array(
+                'status' => 'recovered',
+                'recovered' => 1,
+                'updated_at' => current_time('mysql')
+            ),
+            array('session_id' => $session_id),
+            array('%s', '%d', '%s'),
+            array('%s')
+        );
+    }
+    
+    public function check_and_send_recovery_emails() {
+        global $wpdb;
+        
+        // Find carts abandoned for more than 1 hour
+        $time_threshold = date('Y-m-d H:i:s', strtotime('-1 hour'));
+        
+        $abandoned_carts = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$this->table_name} 
+            WHERE status = 'active' 
+            AND recovery_sent = 0 
+            AND email IS NOT NULL 
+            AND email != '' 
+            AND updated_at < %s
+            LIMIT 10",
+            $time_threshold
+        ));
+        
+        foreach ($abandoned_carts as $cart) {
+            $this->send_recovery_email($cart);
+        }
+    }
+    
+    private function send_recovery_email($cart) {
+        global $wpdb;
+        
+        if (!$cart->email) {
+            return;
+        }
+        
+        $recovery_url = add_query_arg(array(
+            'acr_recover' => $cart->recovery_token,
+            'session' => $cart->session_id
+        ), wc_get_cart_url());
+        
+        $cart_data = unserialize($cart->cart_data);
+        $items_html = '';
+        
+        if (isset($cart_data['cart_contents'])) {
+            foreach ($cart_data['cart_contents'] as $item) {
+                $product = wc_get_product($item['product_id']);
+                if ($product) {
+                    $items_html .= sprintf(
+                        '<li>%s - Quantity: %d - %s</li>',
+                        $product->get_name(),
+                        $item['quantity'],
+                        wc_price($item['line_total'])
+                    );
+                }
+            }
+        }
+        
+        $subject = 'You left items in your cart!';
+        $message = sprintf('
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+                    <h2 style="color: #0073aa;">You left something behind!</h2>
+                    <p>Hi there,</p>
+                    <p>We noticed you left some items in your cart. Don\'t worry, we saved them for you!</p>
+                    
+                    <h3>Your Cart Items:</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        %s
+                    </ul>
+                    
+                    <p><strong>Total: %s</strong></p>
+                    
+                    <div style="margin: 30px 0;">
+                        <a href="%s" style="background-color: #0073aa; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                            Complete Your Purchase
+                        </a>
+                    </div>
+                    
+                    <p style="color: #666; font-size: 12px;">This link will expire in 7 days.</p>
+                </div>
+            </body>
+            </html>
+        ', $items_html, wc_price($cart->cart_total), esc_url($recovery_url));
+        
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        
+        $sent = wp_mail($cart->email, $subject, $message, $headers);
+        
+        if ($sent) {
+            $wpdb->update(
+                $this->table_name,
+                array(
+                    'recovery_sent' => 1,
+                    'recovery_sent_at' => current_time('mysql')
+                ),
+                array('id' => $cart->id),
+                array('%d', '%s'),
+                array('%d')
+            );
+        }
+    }
+    
+    public function handle_recovery_link() {
+        if (isset($_GET['acr_recover']) && isset($_GET['session'])) {
+            global $wpdb;
+            
+            $token = sanitize_text_field($_GET['acr_recover']);
+            $session = sanitize_text_field($_GET['session']);
+            
+            $cart_record = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$this->table_name} WHERE recovery_token = %s AND session_id = %s",
+                $token,
+                $session
+            ));
+            
+            if ($cart_record && $cart_record->status === 'active') {
+                // Restore cart
+                $cart_data = unserialize($cart_record->cart_data);
+                
+                if (isset($cart_data['cart_contents'])) {
+                    WC()->cart->empty_cart();
+                    
+                    foreach ($cart_data['cart_contents'] as $item) {
+                        WC()->cart->add_to_cart(
+                            $item['product_id'],
+                            $item['quantity'],
+                            $item['variation_id'],
+                            $item['variation'],
+                            $item
+                        );
+                    }
+                    
+                    wc_add_notice('Your cart has been restored!', 'success');
+                    wp_redirect(wc_get_cart_url());
+                    exit;
+                }
+            }
         }
     }
 }
