@@ -15,17 +15,23 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Load the singleton trait
+require_once plugin_dir_path(__FILE__) . 'traits/singleton.php';
+
+use Auto_Cart_Recovery\Traits\Singleton;
+
 /**
  * Final class for auto cart recovery plugin
  * 
  * This class will play the main role for manage abandoned cart operation
  */
-final class Auto_Cart_Recovery{
+final class Auto_Cart_Recovery {
+    use Singleton;
 
     /**
      * Constructor method for invoking necessary methods
      */
-    public function __construct() {
+    protected function __construct() {
         if (!$this->check_woocommerce()) {
             return;
         }
@@ -93,7 +99,6 @@ final class Auto_Cart_Recovery{
      * Include necessary files
      */
     private function includes() {
-        require_once ACR_PLUGIN_DIR . 'traits/singleton.php';
         require_once ACR_PLUGIN_DIR . 'includes/class-plugin-core.php';
     }
 
@@ -107,4 +112,4 @@ final class Auto_Cart_Recovery{
 }
 
 // Initialize the plugin
-new Auto_Cart_Recovery();
+Auto_Cart_Recovery::instance();
