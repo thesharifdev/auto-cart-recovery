@@ -45,7 +45,14 @@ if (!$woocommerce_active) {
             $button_html = '<a href="' . esc_url($install_url) . '" class="button button-primary" style="margin-left: 10px;">Install WooCommerce</a>';
         }
 
-        echo '<div class="' . esc_attr($notice_class) . '"><p>' . wp_kses_post($message) . $button_html . '</p></div>';
+        $allowed_html = array(
+            'div' => array('class' => true),
+            'p' => array(),
+            'a' => array('href' => true, 'class' => true),
+            'strong' => array(),
+        );
+        $output = '<div class="' . esc_attr($notice_class) . '"><p>' . $message . $button_html . '</p></div>';
+        echo wp_kses($output, $allowed_html);
     });
     return;
 }
