@@ -78,18 +78,18 @@ class Plugin_Core
         if ($table_exists !== $this->table_name) {
 ?>
             <div class="wrap">
-                <h1>🛒 Auto Cart Recovery Dashboard</h1>
+                <h1><?php echo esc_html('🛒 Auto Cart Recovery Dashboard'); ?></h1>
                 <div class="notice notice-error">
-                    <p><strong>Database table missing!</strong></p>
-                    <p>The plugin's database table was not created. Please try:</p>
+                    <p><strong><?php echo esc_html('Database table missing!'); ?></strong></p>
+                    <p><?php echo esc_html('The plugin\'s database table was not created. Please try:'); ?></p>
                     <ol>
-                        <li>Deactivate and reactivate the plugin</li>
-                        <li>Or click the button below to create the table manually</li>
+                        <li><?php echo esc_html('Deactivate and reactivate the plugin'); ?></li>
+                        <li><?php echo esc_html('Or click the button below to create the table manually'); ?></li>
                     </ol>
                     <form method="post" action="">
                         <?php wp_nonce_field('acr_create_table'); ?>
                         <button type="submit" name="acr_create_table" class="button button-primary">
-                            Create Database Table Now
+                            <?php echo esc_html('Create Database Table Now'); ?>
                         </button>
                     </form>
                 </div>
@@ -99,7 +99,7 @@ class Plugin_Core
             // Handle manual table creation
             if (isset($_POST['acr_create_table']) && check_admin_referer('acr_create_table')) {
                 $this->create_database_table();
-                echo '<div class="notice notice-success"><p>Table created! Please refresh this page.</p></div>';
+                echo wp_kses_post('<div class="notice notice-success"><p>' . esc_html('Table created! Please refresh this page.') . '</p></div>');
             }
             return;
         }
@@ -148,74 +148,74 @@ class Plugin_Core
 
         ?>
         <div class="wrap">
-            <h1>🛒 Auto Cart Recovery Dashboard</h1>
+            <h1><?php echo esc_html('🛒 Auto Cart Recovery Dashboard'); ?></h1>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
                 <div style="background: #fff; padding: 20px; border-left: 4px solid #0073aa; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0 0 10px 0; color: #666;">Total Abandoned</h3>
-                    <p style="font-size: 32px; margin: 0; font-weight: bold;"><?php echo number_format((int)$stats->total_abandoned); ?></p>
+                    <h3 style="margin: 0 0 10px 0; color: #666;"><?php echo esc_html('Total Abandoned'); ?></h3>
+                    <p style="font-size: 32px; margin: 0; font-weight: bold;"><?php echo esc_html(number_format((int)$stats->total_abandoned)); ?></p>
                 </div>
 
                 <div style="background: #fff; padding: 20px; border-left: 4px solid #46b450; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0 0 10px 0; color: #666;">Active Carts</h3>
-                    <p style="font-size: 32px; margin: 0; font-weight: bold; color: #46b450;"><?php echo number_format((int)$stats->active); ?></p>
+                    <h3 style="margin: 0 0 10px 0; color: #666;"><?php echo esc_html('Active Carts'); ?></h3>
+                    <p style="font-size: 32px; margin: 0; font-weight: bold; color: #46b450;"><?php echo esc_html(number_format((int)$stats->active)); ?></p>
                 </div>
 
                 <div style="background: #fff; padding: 20px; border-left: 4px solid #00a32a; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0 0 10px 0; color: #666;">Recovered</h3>
-                    <p style="font-size: 32px; margin: 0; font-weight: bold; color: #00a32a;"><?php echo number_format((int)$stats->recovered); ?></p>
+                    <h3 style="margin: 0 0 10px 0; color: #666;"><?php echo esc_html('Recovered'); ?></h3>
+                    <p style="font-size: 32px; margin: 0; font-weight: bold; color: #00a32a;"><?php echo esc_html(number_format((int)$stats->recovered)); ?></p>
                 </div>
 
                 <div style="background: #fff; padding: 20px; border-left: 4px solid #f0a736; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0 0 10px 0; color: #666;">Emails Sent</h3>
-                    <p style="font-size: 32px; margin: 0; font-weight: bold; color: #f0a736;"><?php echo number_format((int)$stats->emails_sent); ?></p>
+                    <h3 style="margin: 0 0 10px 0; color: #666;"><?php echo esc_html('Emails Sent'); ?></h3>
+                    <p style="font-size: 32px; margin: 0; font-weight: bold; color: #f0a736;"><?php echo esc_html(number_format((int)$stats->emails_sent)); ?></p>
                 </div>
 
                 <div style="background: #fff; padding: 20px; border-left: 4px solid #9b51e0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0 0 10px 0; color: #666;">Recovered Value</h3>
-                    <p style="font-size: 24px; margin: 0; font-weight: bold; color: #9b51e0;"><?php echo wc_price((float)$stats->recovered_value); ?></p>
+                    <h3 style="margin: 0 0 10px 0; color: #666;"><?php echo esc_html('Recovered Value'); ?></h3>
+                    <p style="font-size: 24px; margin: 0; font-weight: bold; color: #9b51e0;"><?php echo wp_kses_post(wc_price((float)$stats->recovered_value)); ?></p>
                 </div>
             </div>
 
             <div style="background: #fff; padding: 20px; margin: 20px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <h2>✨ Plugin Features</h2>
+                <h2><?php echo esc_html('✨ Plugin Features'); ?></h2>
                 <ul style="line-height: 2;">
-                    <li>✅ Automatic cart tracking for all visitors</li>
-                    <li>✅ Email capture during checkout</li>
-                    <li>✅ Automated recovery emails sent after 1 hour</li>
-                    <li>✅ One-click cart restoration links</li>
-                    <li>✅ Real-time statistics and monitoring</li>
-                    <li>✅ Works with guest and registered users</li>
+                    <li><?php echo esc_html('✅ Automatic cart tracking for all visitors'); ?></li>
+                    <li><?php echo esc_html('✅ Email capture during checkout'); ?></li>
+                    <li><?php echo esc_html('✅ Automated recovery emails sent after 1 hour'); ?></li>
+                    <li><?php echo esc_html('✅ One-click cart restoration links'); ?></li>
+                    <li><?php echo esc_html('✅ Real-time statistics and monitoring'); ?></li>
+                    <li><?php echo esc_html('✅ Works with guest and registered users'); ?></li>
                 </ul>
             </div>
 
-            <h2>Recent Abandoned Carts</h2>
+            <h2><?php echo esc_html('Recent Abandoned Carts'); ?></h2>
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Email</th>
-                        <th>Cart Total</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                        <th>Updated</th>
-                        <th>Recovery Sent</th>
-                        <th>Actions</th>
+                        <th><?php echo esc_html('ID'); ?></th>
+                        <th><?php echo esc_html('Email'); ?></th>
+                        <th><?php echo esc_html('Cart Total'); ?></th>
+                        <th><?php echo esc_html('Status'); ?></th>
+                        <th><?php echo esc_html('Created'); ?></th>
+                        <th><?php echo esc_html('Updated'); ?></th>
+                        <th><?php echo esc_html('Recovery Sent'); ?></th>
+                        <th><?php echo esc_html('Actions'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($recent_carts)) : ?>
                         <tr>
                             <td colspan="8" style="text-align: center; padding: 40px;">
-                                <p style="font-size: 16px; color: #666;">No abandoned carts yet. Add some products to your cart to test!</p>
+                                <p style="font-size: 16px; color: #666;"><?php echo esc_html('No abandoned carts yet. Add some products to your cart to test!'); ?></p>
                             </td>
                         </tr>
                     <?php else : ?>
                         <?php foreach ($recent_carts as $cart) : ?>
                             <tr>
-                                <td><?php echo $cart->id; ?></td>
-                                <td><?php echo $cart->email ?: '<em>No email</em>'; ?></td>
-                                <td><?php echo wc_price($cart->cart_total); ?></td>
+                                <td><?php echo esc_html($cart->id); ?></td>
+                                <td><?php echo $cart->email ? esc_html($cart->email) : wp_kses_post('<em>No email</em>'); ?></td>
+                                <td><?php echo wp_kses_post(wc_price($cart->cart_total)); ?></td>
                                 <td>
                                     <?php
                                     $status_colors = array(
@@ -225,27 +225,27 @@ class Plugin_Core
                                     );
                                     $color = $status_colors[$cart->status] ?? '#666';
                                     ?>
-                                    <span style="background: <?php echo $color; ?>; color: white; padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">
-                                        <?php echo strtoupper($cart->status); ?>
+                                    <span style="background: <?php echo esc_attr($color); ?>; color: white; padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">
+                                        <?php echo esc_html(strtoupper($cart->status)); ?>
                                     </span>
                                     <?php if ($cart->recovered) : ?>
-                                        <span style="color: #00a32a;">✓ Recovered</span>
+                                        <span style="color: #00a32a;"><?php echo esc_html('✓ Recovered'); ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo date('M j, Y g:i A', strtotime($cart->created_at)); ?></td>
-                                <td><?php echo date('M j, Y g:i A', strtotime($cart->updated_at)); ?></td>
+                                <td><?php echo esc_html(date('M j, Y g:i A', strtotime($cart->created_at))); ?></td>
+                                <td><?php echo esc_html(date('M j, Y g:i A', strtotime($cart->updated_at))); ?></td>
                                 <td>
                                     <?php if ($cart->recovery_sent) : ?>
-                                        ✉️ Sent<br>
-                                        <small><?php echo date('M j, g:i A', strtotime($cart->recovery_sent_at)); ?></small>
+                                        <?php echo esc_html('✉️ Sent'); ?><br>
+                                        <small><?php echo esc_html(date('M j, g:i A', strtotime($cart->recovery_sent_at))); ?></small>
                                     <?php else : ?>
-                                        <em>Not sent</em>
+                                        <em><?php echo esc_html('Not sent'); ?></em>
                                     <?php endif; ?>
                                 </td>
                                 <td>
                                     <?php if ($cart->recovery_token) : ?>
-                                        <a href="<?php echo add_query_arg(array('acr_recover' => $cart->recovery_token, 'session' => $cart->session_id), wc_get_cart_url()); ?>" target="_blank" class="button button-small">
-                                            View Recovery Link
+                                        <a href="<?php echo esc_url(add_query_arg(array('acr_recover' => $cart->recovery_token, 'session' => $cart->session_id), wc_get_cart_url())); ?>" target="_blank" class="button button-small">
+                                            <?php echo esc_html('View Recovery Link'); ?>
                                         </a>
                                     <?php endif; ?>
                                 </td>
@@ -256,16 +256,16 @@ class Plugin_Core
             </table>
 
             <div style="margin-top: 30px; padding: 20px; background: #f0f6fc; border-left: 4px solid #0073aa;">
-                <h3>🧪 Testing Instructions</h3>
+                <h3><?php echo esc_html('🧪 Testing Instructions'); ?></h3>
                 <ol style="line-height: 2;">
-                    <li>Add products to your cart on the frontend</li>
-                    <li>Proceed to checkout and enter your email</li>
-                    <li>Leave without completing the order</li>
-                    <li>Wait 1 hour (or manually trigger: <code>do_action('acr_check_abandoned_carts')</code>)</li>
-                    <li>Check your email for recovery notification</li>
-                    <li>Click the recovery link to restore your cart</li>
+                    <li><?php echo esc_html('Add products to your cart on the frontend'); ?></li>
+                    <li><?php echo esc_html('Proceed to checkout and enter your email'); ?></li>
+                    <li><?php echo esc_html('Leave without completing the order'); ?></li>
+                    <li><?php echo wp_kses_post('Wait 1 hour (or manually trigger: <code>do_action(\'acr_check_abandoned_carts\')</code>)'); ?></li>
+                    <li><?php echo esc_html('Check your email for recovery notification'); ?></li>
+                    <li><?php echo esc_html('Click the recovery link to restore your cart'); ?></li>
                 </ol>
-                <p><strong>Note:</strong> Emails are sent via WordPress's wp_mail(). Make sure your server can send emails or use an SMTP plugin for testing.</p>
+                <p><strong><?php echo esc_html('Note:'); ?></strong> <?php echo esc_html('Emails are sent via WordPress\'s wp_mail(). Make sure your server can send emails or use an SMTP plugin for testing.'); ?></p>
             </div>
         </div>
 <?php
@@ -371,9 +371,9 @@ class Plugin_Core
 
             // Show admin notice
             add_action('admin_notices', function () {
-                echo '<div class="notice notice-success is-dismissible">';
-                echo '<p><strong>Auto Cart Recovery:</strong> Database table created successfully!</p>';
-                echo '</div>';
+                echo wp_kses_post('<div class="notice notice-success is-dismissible">');
+                echo wp_kses_post('<p><strong>Auto Cart Recovery:</strong> Database table created successfully!</p>');
+                echo wp_kses_post('</div>');
             });
         }
     }
