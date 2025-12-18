@@ -73,26 +73,6 @@ class Plugin_Core
     }
 
     /**
-     * Add admin menu for the plugin.
-     * 
-     * @return void
-     */
-    public function add_admin_menu()
-    {
-        // Deprecated: Admin menus are now registered in Admin_Interface
-    }
-
-    /**
-     * Enqueue admin styles.
-     * 
-     * @return void
-     */
-    public function enqueue_admin_styles($hook_suffix)
-    {
-        // Deprecated: admin styles are handled by Admin_Interface
-    }
-
-    /**
      * Admin page rendering.
      * 
      * @return void
