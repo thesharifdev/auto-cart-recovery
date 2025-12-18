@@ -30,6 +30,9 @@ class Plugin_Core
         // Check and create table if needed on admin init
         add_action('admin_init', array($this, 'check_database_table'));
 
+        // Enqueue admin styles
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_styles'));
+
         // Admin menu
         add_action('admin_menu', array($this, 'add_admin_menu'));
 
@@ -65,6 +68,20 @@ class Plugin_Core
             array($this, 'admin_page'),
             'dashicons-cart',
             56
+        );
+    }
+
+    public function enqueue_admin_styles($hook_suffix)
+    {
+        if ($hook_suffix !== 'toplevel_page_auto-cart-recovery') {
+            return;
+        }
+
+        wp_enqueue_style(
+            'acr-admin-style',
+            plugin_dir_url(dirname(dirname(__FILE__))) . 'assets/css/style.css',
+            array(),
+            '1.0.0'
         );
     }
 
@@ -206,8 +223,8 @@ class Plugin_Core
         <div class="wrap">
             <h1><?php echo esc_html('🛒 Auto Cart Recovery Dashboard'); ?></h1>
             
-            <div style="margin-bottom: 20px;">
-                <form method="post" action="" style="display: inline;">
+            <div style="margin-bottom: 12px; margin-top: 20px">
+                <form method="post" action="" class="acr-reset-form">
                     <?php wp_nonce_field('acr_reset_all_data_nonce'); ?>
                     <input type="hidden" name="acr_reset_all_data" value="1">
                     <button type="submit" class="button button-link-delete" onclick="return confirm('WARNING: This will permanently delete ALL abandoned cart data. This action cannot be undone. Are you sure?');">
@@ -216,25 +233,25 @@ class Plugin_Core
                 </form>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
-                <div style="background: #fff; padding: 20px; border-left: 4px solid #0073aa; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0 0 10px 0; color: #666;"><?php echo esc_html('Total Abandoned'); ?></h3>
-                    <p style="font-size: 32px; margin: 0; font-weight: bold;"><?php echo esc_html(number_format((int)$stats->total_abandoned)); ?></p>
+            <div class="acr-stats-grid">
+                <div class="acr-stat-card">
+                    <h3><?php echo esc_html('Total Abandoned'); ?></h3>
+                    <p class="acr-stat-value"><?php echo esc_html(number_format((int)$stats->total_abandoned)); ?></p>
                 </div>
 
-                <div style="background: #fff; padding: 20px; border-left: 4px solid #00a32a; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0 0 10px 0; color: #666;"><?php echo esc_html('Recovered'); ?></h3>
-                    <p style="font-size: 32px; margin: 0; font-weight: bold; color: #00a32a;"><?php echo esc_html(number_format((int)$stats->recovered)); ?></p>
+                <div class="acr-stat-card recovered">
+                    <h3><?php echo esc_html('Recovered'); ?></h3>
+                    <p class="acr-stat-value"><?php echo esc_html(number_format((int)$stats->recovered)); ?></p>
                 </div>
 
-                <div style="background: #fff; padding: 20px; border-left: 4px solid #f0a736; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0 0 10px 0; color: #666;"><?php echo esc_html('Emails Sent'); ?></h3>
-                    <p style="font-size: 32px; margin: 0; font-weight: bold; color: #f0a736;"><?php echo esc_html(number_format((int)$stats->emails_sent)); ?></p>
+                <div class="acr-stat-card emails-sent">
+                    <h3><?php echo esc_html('Emails Sent'); ?></h3>
+                    <p class="acr-stat-value"><?php echo esc_html(number_format((int)$stats->emails_sent)); ?></p>
                 </div>
 
-                <div style="background: #fff; padding: 20px; border-left: 4px solid #9b51e0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0 0 10px 0; color: #666;"><?php echo esc_html('Recovered Value'); ?></h3>
-                    <p style="font-size: 24px; margin: 0; font-weight: bold; color: #9b51e0;"><?php echo wp_kses_post(wc_price((float)$stats->recovered_value)); ?></p>
+                <div class="acr-stat-card recovered-value">
+                    <h3><?php echo esc_html('Recovered Value'); ?></h3>
+                    <p class="acr-stat-value"><?php echo wp_kses_post(wc_price((float)$stats->recovered_value)); ?></p>
                 </div>
             </div>
 
@@ -255,8 +272,8 @@ class Plugin_Core
                 <tbody>
                     <?php if (empty($recent_carts)) : ?>
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 40px;">
-                                <p style="font-size: 16px; color: #666;"><?php echo esc_html('No abandoned carts yet. Add some products to your cart to test!'); ?></p>
+                            <td colspan="8" class="acr-empty-state">
+                                <p><?php echo esc_html('No abandoned carts yet. Add some products to your cart to test!'); ?></p>
                             </td>
                         </tr>
                     <?php else : ?>
@@ -273,20 +290,23 @@ class Plugin_Core
                                         'abandoned' => '#dc3232'
                                     );
                                     $color = $status_colors[$cart->status] ?? '#666';
+                                    $status_class = 'acr-status-badge ' . sanitize_html_class($cart->status);
                                     ?>
-                                    <span style="background: <?php echo esc_attr($color); ?>; color: white; padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">
+                                    <span class="<?php echo esc_attr($status_class); ?>">
                                         <?php echo esc_html(strtoupper($cart->status)); ?>
                                     </span>
                                     <?php if ($cart->recovered) : ?>
-                                        <span style="color: #00a32a;"><?php echo esc_html('✓ Recovered'); ?></span>
+                                        <span class="acr-recovered-indicator"><?php echo esc_html('✓ Recovered'); ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td><?php echo esc_html(date('M j, Y g:i A', strtotime($cart->created_at))); ?></td>
                                 <td><?php echo esc_html(date('M j, Y g:i A', strtotime($cart->updated_at))); ?></td>
                                 <td>
                                     <?php if ($cart->recovery_sent) : ?>
-                                        <?php echo esc_html('✉️ Sent'); ?><br>
-                                        <small><?php echo esc_html(date('M j, g:i A', strtotime($cart->recovery_sent_at))); ?></small>
+                                        <div class="acr-recovery-sent">
+                                            <?php echo esc_html('✉️ Sent'); ?><br>
+                                            <small><?php echo esc_html(date('M j, g:i A', strtotime($cart->recovery_sent_at))); ?></small>
+                                        </div>
                                     <?php else : ?>
                                         <em><?php echo esc_html('Not sent'); ?></em>
                                     <?php endif; ?>
@@ -691,6 +711,11 @@ class Plugin_Core
         return $coupon_code;
     }
     
+    /**
+     * Handle recovery link
+     * 
+     * @return void
+     */
     public function handle_recovery_link() {
         if (isset($_GET['acr_recover']) && isset($_GET['session'])) {
             global $wpdb;
