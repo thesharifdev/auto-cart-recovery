@@ -463,6 +463,13 @@ class Plugin_Core
             );
         }
     }
+    private function get_user_email() {
+        $user = wp_get_current_user();
+        if ($user->ID) {
+            return $user->user_email;
+        }
+        return null;
+    }
     
     public function clear_abandoned_cart($order_id) {
         global $wpdb;
