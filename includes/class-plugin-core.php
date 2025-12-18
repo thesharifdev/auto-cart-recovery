@@ -266,19 +266,6 @@ class Plugin_Core
                     <?php endif; ?>
                 </tbody>
             </table>
-
-            <div style="margin-top: 30px; padding: 20px; background: #f0f6fc; border-left: 4px solid #0073aa;">
-                <h3><?php echo esc_html('🧪 Testing Instructions'); ?></h3>
-                <ol style="line-height: 2;">
-                    <li><?php echo esc_html('Add products to your cart on the frontend'); ?></li>
-                    <li><?php echo esc_html('Proceed to checkout and enter your email'); ?></li>
-                    <li><?php echo esc_html('Leave without completing the order'); ?></li>
-                    <li><?php echo wp_kses_post('Wait 1 hour (or manually trigger: <code>do_action(\'acr_check_abandoned_carts\')</code>)'); ?></li>
-                    <li><?php echo esc_html('Check your email for recovery notification'); ?></li>
-                    <li><?php echo esc_html('Click the recovery link to restore your cart'); ?></li>
-                </ol>
-                <p><strong><?php echo esc_html('Note:'); ?></strong> <?php echo esc_html('Emails are sent via WordPress\'s wp_mail(). Make sure your server can send emails or use an SMTP plugin for testing.'); ?></p>
-            </div>
         </div>
 <?php
     }
