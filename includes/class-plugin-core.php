@@ -72,6 +72,26 @@ class Plugin_Core
     {
         global $wpdb;
 
+        // Handle manual email sending
+        if (isset($_POST['acr_send_recovery_email']) && check_admin_referer('acr_send_recovery_email_nonce')) {
+            $cart_id = intval($_POST['cart_id']);
+            $cart_record = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$this->table_name} WHERE id = %d",
+                $cart_id
+            ));
+            
+            if ($cart_record && $cart_record->email) {
+                $this->send_recovery_email($cart_record);
+                add_action('admin_notices', function () {
+                    echo wp_kses_post('<div class="notice notice-success is-dismissible"><p>Recovery email sent successfully!</p></div>');
+                });
+            } else {
+                add_action('admin_notices', function () {
+                    echo wp_kses_post('<div class="notice notice-error is-dismissible"><p>Error: Cart not found or no email available.</p></div>');
+                });
+            }
+        }
+
         // Check if table exists
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$this->table_name}'");
 
@@ -104,8 +124,9 @@ class Plugin_Core
             return;
         }
 
-        // Only count carts as abandoned if they're older than 1 hour
-        $time_threshold = date('Y-m-d H:i:s', strtotime('-1 hour'));
+        // Only count carts as abandoned if they're older than the threshold
+        $abandoned_time = apply_filters('acr_abandoned_time_threshold', '-1 hour');
+        $time_threshold = date('Y-m-d H:i:s', strtotime($abandoned_time));
         
         $stats = $wpdb->get_row($wpdb->prepare("
             SELECT 
@@ -154,11 +175,6 @@ class Plugin_Core
                 <div style="background: #fff; padding: 20px; border-left: 4px solid #0073aa; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                     <h3 style="margin: 0 0 10px 0; color: #666;"><?php echo esc_html('Total Abandoned'); ?></h3>
                     <p style="font-size: 32px; margin: 0; font-weight: bold;"><?php echo esc_html(number_format((int)$stats->total_abandoned)); ?></p>
-                </div>
-
-                <div style="background: #fff; padding: 20px; border-left: 4px solid #46b450; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h3 style="margin: 0 0 10px 0; color: #666;"><?php echo esc_html('Active Carts'); ?></h3>
-                    <p style="font-size: 32px; margin: 0; font-weight: bold; color: #46b450;"><?php echo esc_html(number_format((int)$stats->active)); ?></p>
                 </div>
 
                 <div style="background: #fff; padding: 20px; border-left: 4px solid #00a32a; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
@@ -247,6 +263,14 @@ class Plugin_Core
                                         <a href="<?php echo esc_url(add_query_arg(array('acr_recover' => $cart->recovery_token, 'session' => $cart->session_id), wc_get_cart_url())); ?>" target="_blank" class="button button-small">
                                             <?php echo esc_html('View Recovery Link'); ?>
                                         </a>
+                                        <form method="post" action="" style="display: inline;">
+                                            <?php wp_nonce_field('acr_send_recovery_email_nonce'); ?>
+                                            <input type="hidden" name="acr_send_recovery_email" value="1">
+                                            <input type="hidden" name="cart_id" value="<?php echo esc_attr($cart->id); ?>">
+                                            <button type="submit" class="button button-small" style="margin-left: 5px;">
+                                                <?php echo esc_html('Send Email'); ?>
+                                            </button>
+                                        </form>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -496,8 +520,9 @@ class Plugin_Core
     public function check_and_send_recovery_emails() {
         global $wpdb;
         
-        // Find carts abandoned for more than 1 hour
-        $time_threshold = date('Y-m-d H:i:s', strtotime('-1 hour'));
+        // Find carts abandoned for more than the threshold
+        $abandoned_time = apply_filters('acr_abandoned_time_threshold', '-1 hour');
+        $time_threshold = date('Y-m-d H:i:s', strtotime($abandoned_time));
         
         $abandoned_carts = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM {$this->table_name} 
