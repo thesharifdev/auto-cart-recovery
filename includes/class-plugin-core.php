@@ -72,6 +72,41 @@ class Plugin_Core
     {
         global $wpdb;
 
+        // Handle reset all data
+        if (isset($_POST['acr_reset_all_data']) && check_admin_referer('acr_reset_all_data_nonce')) {
+            $truncated = $wpdb->query("TRUNCATE TABLE {$this->table_name}");
+            
+            if ($truncated !== false) {
+                add_action('admin_notices', function () {
+                    echo wp_kses_post('<div class="notice notice-success is-dismissible"><p>All abandoned cart data has been reset successfully!</p></div>');
+                });
+            } else {
+                add_action('admin_notices', function () {
+                    echo wp_kses_post('<div class="notice notice-error is-dismissible"><p>Error resetting data. Please try again.</p></div>');
+                });
+            }
+        }
+
+        // Handle cart deletion
+        if (isset($_POST['acr_delete_cart']) && check_admin_referer('acr_delete_cart_nonce')) {
+            $cart_id = intval($_POST['cart_id']);
+            $deleted = $wpdb->delete(
+                $this->table_name,
+                array('id' => $cart_id),
+                array('%d')
+            );
+            
+            if ($deleted) {
+                add_action('admin_notices', function () {
+                    echo wp_kses_post('<div class="notice notice-success is-dismissible"><p>Abandoned cart deleted successfully!</p></div>');
+                });
+            } else {
+                add_action('admin_notices', function () {
+                    echo wp_kses_post('<div class="notice notice-error is-dismissible"><p>Error deleting cart. Please try again.</p></div>');
+                });
+            }
+        }
+
         // Handle manual email sending
         if (isset($_POST['acr_send_recovery_email']) && check_admin_referer('acr_send_recovery_email_nonce')) {
             $cart_id = intval($_POST['cart_id']);
@@ -125,7 +160,7 @@ class Plugin_Core
         }
 
         // Only count carts as abandoned if they're older than the threshold
-        $abandoned_time = apply_filters('acr_abandoned_time_threshold', '-1 hour');
+        $abandoned_time = apply_filters('acr_abandoned_time_threshold', '-2 minutes');
         $time_threshold = date('Y-m-d H:i:s', strtotime($abandoned_time));
         
         $stats = $wpdb->get_row($wpdb->prepare("
@@ -170,6 +205,16 @@ class Plugin_Core
         ?>
         <div class="wrap">
             <h1><?php echo esc_html('🛒 Auto Cart Recovery Dashboard'); ?></h1>
+            
+            <div style="margin-bottom: 20px;">
+                <form method="post" action="" style="display: inline;">
+                    <?php wp_nonce_field('acr_reset_all_data_nonce'); ?>
+                    <input type="hidden" name="acr_reset_all_data" value="1">
+                    <button type="submit" class="button button-link-delete" onclick="return confirm('WARNING: This will permanently delete ALL abandoned cart data. This action cannot be undone. Are you sure?');">
+                        <?php echo esc_html('🗑️ Reset All Data'); ?>
+                    </button>
+                </form>
+            </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
                 <div style="background: #fff; padding: 20px; border-left: 4px solid #0073aa; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
@@ -260,6 +305,14 @@ class Plugin_Core
                                             </button>
                                         </form>
                                     <?php endif; ?>
+                                    <form method="post" action="" style="display: inline;">
+                                        <?php wp_nonce_field('acr_delete_cart_nonce'); ?>
+                                        <input type="hidden" name="acr_delete_cart" value="1">
+                                        <input type="hidden" name="cart_id" value="<?php echo esc_attr($cart->id); ?>">
+                                        <button type="submit" class="button button-small button-link-delete" style="margin-left: 5px;" onclick="return confirm('Are you sure you want to delete this abandoned cart?');">
+                                            <?php echo esc_html('Delete'); ?>
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -496,7 +549,7 @@ class Plugin_Core
         global $wpdb;
         
         // Find carts abandoned for more than the threshold
-        $abandoned_time = apply_filters('acr_abandoned_time_threshold', '-1 hour');
+        $abandoned_time = apply_filters('acr_abandoned_time_threshold', '-2 minutes');
         $time_threshold = date('Y-m-d H:i:s', strtotime($abandoned_time));
         
         $abandoned_carts = $wpdb->get_results($wpdb->prepare(
