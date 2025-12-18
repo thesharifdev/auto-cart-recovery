@@ -99,6 +99,13 @@ final class Auto_Cart_Recovery {
      * Include necessary files
      */
     private function includes() {
+        // Core classes
+        require_once ACR_PLUGIN_DIR . 'includes/class-database-manager.php';
+        require_once ACR_PLUGIN_DIR . 'includes/class-cart-tracker.php';
+        require_once ACR_PLUGIN_DIR . 'includes/class-email-manager.php';
+        require_once ACR_PLUGIN_DIR . 'includes/class-cart-recovery.php';
+        require_once ACR_PLUGIN_DIR . 'includes/class-admin-interface.php';
+        // Main orchestrator
         require_once ACR_PLUGIN_DIR . 'includes/class-plugin-core.php';
     }
 

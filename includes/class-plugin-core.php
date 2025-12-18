@@ -15,6 +15,16 @@ class Plugin_Core
     use Singleton;
 
     private $table_name;
+    /** @var Database_Manager */
+    private $db;
+    /** @var Cart_Tracker */
+    private $tracker;
+    /** @var Email_Manager */
+    private $emailer;
+    /** @var Cart_Recovery */
+    private $recovery;
+    /** @var Admin_Interface */
+    private $admin;
 
     /**
      * Initialize the plugin core functionalities.
@@ -26,41 +36,40 @@ class Plugin_Core
         global $wpdb;
         $this->table_name = $wpdb->prefix . 'acr_abandoned_carts';
 
-        // Activation hook
-        register_activation_hook(__FILE__, array($this, 'activate'));
+        // Instantiate components
+        $this->db = new Database_Manager();
+        $this->tracker = new Cart_Tracker($this->db);
+        $this->emailer = new Email_Manager($this->db);
+        $this->recovery = new Cart_Recovery($this->db, $this->emailer);
+        $this->admin = new Admin_Interface($this->db);
 
-        // Deactivation hook
+        // Activation / deactivation
+        register_activation_hook(__FILE__, array($this, 'activate'));
         register_deactivation_hook(__FILE__, array($this, 'deactivate'));
 
-        // Check and create table if needed on admin init
+        // Database table check on admin init
         add_action('admin_init', array($this, 'check_database_table'));
 
-        // Enqueue admin styles
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_styles'));
+        // Admin hooks via Admin_Interface
+        $this->admin->register_hooks();
 
-        // Admin menu
-        add_action('admin_menu', array($this, 'add_admin_menu'));
+        // Cart tracking hooks
+        add_action('init', array($this->tracker, 'init_tracking'));
+        add_action('woocommerce_add_to_cart', array($this->tracker, 'track_cart_on_add'), 10, 6);
+        add_action('woocommerce_cart_item_removed', array($this->tracker, 'track_cart'), 10);
+        add_action('woocommerce_update_cart_action_cart_updated', array($this->tracker, 'track_cart'), 10);
+        add_action('woocommerce_checkout_update_order_review', array($this->tracker, 'capture_checkout_email'));
 
-        // Cart tracking on plugin init
-        add_action('init', array($this, 'cart_tracking'));
-        // Track cart updates
-        add_action('woocommerce_add_to_cart', array($this, 'track_cart'), 10, 6);
-        add_action('woocommerce_cart_item_removed', array($this, 'track_cart_simple'), 10);
-        add_action('woocommerce_update_cart_action_cart_updated', array($this, 'track_cart_simple'), 10);
-        
-        // Track user email during checkout
-        add_action('woocommerce_checkout_update_order_review', array($this, 'capture_email_from_checkout'));
-        
-        // Clear cart on order completion
-        add_action('woocommerce_thankyou', array($this, 'clear_abandoned_cart'), 10, 1);
-        add_action('woocommerce_order_status_completed', array($this, 'clear_abandoned_cart'), 10, 1);
-        add_action('woocommerce_order_status_processing', array($this, 'clear_abandoned_cart'), 10, 1);
-        
-        // Schedule recovery emails
-        add_action('acr_check_abandoned_carts', array($this, 'check_and_send_recovery_emails'));
-        
-        // Recovery link handler
-        add_action('template_redirect', array($this, 'handle_recovery_link'));
+        // Order completion -> mark recovered
+        add_action('woocommerce_thankyou', array($this->recovery, 'mark_cart_recovered_on_order'), 10, 1);
+        add_action('woocommerce_order_status_completed', array($this->recovery, 'mark_cart_recovered_on_order'), 10, 1);
+        add_action('woocommerce_order_status_processing', array($this->recovery, 'mark_cart_recovered_on_order'), 10, 1);
+
+        // Schedule check
+        add_action('acr_check_abandoned_carts', array($this->recovery, 'check_and_send_recovery_emails'));
+
+        // Recovery link
+        add_action('template_redirect', array($this->recovery, 'handle_recovery_link'));
     }
 
     /**
@@ -70,15 +79,7 @@ class Plugin_Core
      */
     public function add_admin_menu()
     {
-        add_menu_page(
-            'Abandoned Carts',
-            'Cart Recovery',
-            'manage_woocommerce',
-            'auto-cart-recovery',
-            array($this, 'admin_page'),
-            'dashicons-cart',
-            56
-        );
+        // Deprecated: Admin menus are now registered in Admin_Interface
     }
 
     /**
@@ -88,16 +89,7 @@ class Plugin_Core
      */
     public function enqueue_admin_styles($hook_suffix)
     {
-        if ($hook_suffix !== 'toplevel_page_auto-cart-recovery') {
-            return;
-        }
-
-        wp_enqueue_style(
-            'acr-admin-style',
-            plugins_url('assets/css/style.css', dirname(__FILE__)),
-            array(),
-            ACR_VERSION
-        );
+        // Deprecated: admin styles are handled by Admin_Interface
     }
 
     /**
@@ -105,263 +97,7 @@ class Plugin_Core
      * 
      * @return void
      */
-    public function admin_page()
-    {
-        global $wpdb;
-
-        // Handle reset all data
-        if (isset($_POST['acr_reset_all_data']) && check_admin_referer('acr_reset_all_data_nonce')) {
-            $truncated = $wpdb->query("TRUNCATE TABLE {$this->table_name}");
-            
-            if ($truncated !== false) {
-                add_action('admin_notices', function () {
-                    echo wp_kses_post('<div class="notice notice-success is-dismissible"><p>All abandoned cart data has been reset successfully!</p></div>');
-                });
-            } else {
-                add_action('admin_notices', function () {
-                    echo wp_kses_post('<div class="notice notice-error is-dismissible"><p>Error resetting data. Please try again.</p></div>');
-                });
-            }
-        }
-
-        // Handle cart deletion
-        if (isset($_POST['acr_delete_cart']) && check_admin_referer('acr_delete_cart_nonce')) {
-            $cart_id = intval($_POST['cart_id']);
-            $deleted = $wpdb->delete(
-                $this->table_name,
-                array('id' => $cart_id),
-                array('%d')
-            );
-            
-            if ($deleted) {
-                add_action('admin_notices', function () {
-                    echo wp_kses_post('<div class="notice notice-success is-dismissible"><p>Abandoned cart deleted successfully!</p></div>');
-                });
-            } else {
-                add_action('admin_notices', function () {
-                    echo wp_kses_post('<div class="notice notice-error is-dismissible"><p>Error deleting cart. Please try again.</p></div>');
-                });
-            }
-        }
-
-        // Handle manual email sending
-        if (isset($_POST['acr_send_recovery_email']) && check_admin_referer('acr_send_recovery_email_nonce')) {
-            $cart_id = intval($_POST['cart_id']);
-            $cart_record = $wpdb->get_row($wpdb->prepare(
-                "SELECT * FROM {$this->table_name} WHERE id = %d",
-                $cart_id
-            ));
-            
-            if ($cart_record && $cart_record->email) {
-                $this->send_recovery_email($cart_record);
-                add_action('admin_notices', function () {
-                    echo wp_kses_post('<div class="notice notice-success is-dismissible"><p>Recovery email sent successfully!</p></div>');
-                });
-            } else {
-                add_action('admin_notices', function () {
-                    echo wp_kses_post('<div class="notice notice-error is-dismissible"><p>Error: Cart not found or no email available.</p></div>');
-                });
-            }
-        }
-
-        // Check if table exists
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$this->table_name}'");
-
-        if ($table_exists !== $this->table_name) {
-?>
-            <div class="wrap">
-                <h1><?php echo esc_html('🛒 Auto Cart Recovery Dashboard'); ?></h1>
-                <div class="notice notice-error">
-                    <p><strong><?php echo esc_html('Database table missing!'); ?></strong></p>
-                    <p><?php echo esc_html('The plugin\'s database table was not created. Please try:'); ?></p>
-                    <ol>
-                        <li><?php echo esc_html('Deactivate and reactivate the plugin'); ?></li>
-                        <li><?php echo esc_html('Or click the button below to create the table manually'); ?></li>
-                    </ol>
-                    <form method="post" action="">
-                        <?php wp_nonce_field('acr_create_table'); ?>
-                        <button type="submit" name="acr_create_table" class="button button-primary">
-                            <?php echo esc_html('Create Database Table Now'); ?>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        <?php
-
-            // Handle manual table creation
-            if (isset($_POST['acr_create_table']) && check_admin_referer('acr_create_table')) {
-                $this->create_database_table();
-                echo wp_kses_post('<div class="notice notice-success"><p>' . esc_html('Table created! Please refresh this page.') . '</p></div>');
-            }
-            return;
-        }
-
-        // Only count carts as abandoned if they're older than the threshold
-        $abandoned_time = apply_filters('acr_abandoned_time_threshold', '-2 minutes');
-        $time_threshold = date('Y-m-d H:i:s', strtotime($abandoned_time));
-        
-        $stats = $wpdb->get_row($wpdb->prepare("
-            SELECT 
-                SUM(CASE WHEN status = 'active' AND updated_at < %s THEN 1 ELSE 0 END) as total_abandoned,
-                SUM(CASE WHEN status = 'active' AND updated_at >= %s THEN 1 ELSE 0 END) as active,
-                SUM(CASE WHEN recovered = 1 THEN 1 ELSE 0 END) as recovered,
-                SUM(CASE WHEN recovery_sent = 1 THEN 1 ELSE 0 END) as emails_sent,
-                SUM(CASE WHEN recovered = 1 THEN cart_total ELSE 0 END) as recovered_value
-            FROM {$this->table_name}
-        ", $time_threshold, $time_threshold));
-
-        // Handle null values - ensure all properties exist with defaults
-        if (!$stats) {
-            $stats = (object) array(
-                'total_abandoned' => 0,
-                'active' => 0,
-                'recovered' => 0,
-                'emails_sent' => 0,
-                'recovered_value' => 0
-            );
-        } else {
-            // SUM() returns NULL when there are no rows, so convert NULL to 0
-            $stats->total_abandoned = $stats->total_abandoned ?? 0;
-            $stats->active = $stats->active ?? 0;
-            $stats->recovered = $stats->recovered ?? 0;
-            $stats->emails_sent = $stats->emails_sent ?? 0;
-            $stats->recovered_value = $stats->recovered_value ?? 0;
-        }
-
-        $recent_carts = $wpdb->get_results($wpdb->prepare("
-            SELECT * FROM {$this->table_name}
-            WHERE status = 'active' AND updated_at < %s
-            ORDER BY created_at DESC
-            LIMIT 20
-        ", $time_threshold));
-
-        if (!$recent_carts) {
-            $recent_carts = array();
-        }
-
-        ?>
-        <div class="wrap">
-            <h1><?php echo esc_html('🛒 Auto Cart Recovery Dashboard'); ?></h1>
-            
-            <div style="margin-bottom: 12px; margin-top: 20px">
-                <form method="post" action="" class="acr-reset-form">
-                    <?php wp_nonce_field('acr_reset_all_data_nonce'); ?>
-                    <input type="hidden" name="acr_reset_all_data" value="1">
-                    <button type="submit" class="button button-link-delete" onclick="return confirm('WARNING: This will permanently delete ALL abandoned cart data. This action cannot be undone. Are you sure?');">
-                        <?php echo esc_html('🗑️ Reset All Data'); ?>
-                    </button>
-                </form>
-            </div>
-
-            <div class="acr-stats-grid">
-                <div class="acr-stat-card">
-                    <h3><?php echo esc_html('Total Abandoned'); ?></h3>
-                    <p class="acr-stat-value"><?php echo esc_html(number_format((int)$stats->total_abandoned)); ?></p>
-                </div>
-
-                <div class="acr-stat-card recovered">
-                    <h3><?php echo esc_html('Recovered'); ?></h3>
-                    <p class="acr-stat-value"><?php echo esc_html(number_format((int)$stats->recovered)); ?></p>
-                </div>
-
-                <div class="acr-stat-card emails-sent">
-                    <h3><?php echo esc_html('Emails Sent'); ?></h3>
-                    <p class="acr-stat-value"><?php echo esc_html(number_format((int)$stats->emails_sent)); ?></p>
-                </div>
-
-                <div class="acr-stat-card recovered-value">
-                    <h3><?php echo esc_html('Recovered Value'); ?></h3>
-                    <p class="acr-stat-value"><?php echo wp_kses_post(wc_price((float)$stats->recovered_value)); ?></p>
-                </div>
-            </div>
-
-            <h2><?php echo esc_html('Recent Abandoned Carts'); ?></h2>
-            <table class="wp-list-table widefat fixed striped">
-                <thead>
-                    <tr>
-                        <th><?php echo esc_html('ID'); ?></th>
-                        <th><?php echo esc_html('Email'); ?></th>
-                        <th><?php echo esc_html('Cart Total'); ?></th>
-                        <th><?php echo esc_html('Status'); ?></th>
-                        <th><?php echo esc_html('Created'); ?></th>
-                        <th><?php echo esc_html('Updated'); ?></th>
-                        <th><?php echo esc_html('Recovery Sent'); ?></th>
-                        <th><?php echo esc_html('Actions'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($recent_carts)) : ?>
-                        <tr>
-                            <td colspan="8" class="acr-empty-state">
-                                <p><?php echo esc_html('No abandoned carts yet. Add some products to your cart to test!'); ?></p>
-                            </td>
-                        </tr>
-                    <?php else : ?>
-                        <?php foreach ($recent_carts as $cart) : ?>
-                            <tr>
-                                <td><?php echo esc_html($cart->id); ?></td>
-                                <td><?php echo $cart->email ? esc_html($cart->email) : wp_kses_post('<em>No email</em>'); ?></td>
-                                <td><?php echo wp_kses_post(wc_price($cart->cart_total)); ?></td>
-                                <td>
-                                    <?php
-                                    $status_colors = array(
-                                        'active' => '#46b450',
-                                        'recovered' => '#00a32a',
-                                        'abandoned' => '#dc3232'
-                                    );
-                                    $color = $status_colors[$cart->status] ?? '#666';
-                                    $status_class = 'acr-status-badge ' . sanitize_html_class($cart->status);
-                                    ?>
-                                    <span class="<?php echo esc_attr($status_class); ?>">
-                                        <?php echo esc_html(strtoupper($cart->status)); ?>
-                                    </span>
-                                    <?php if ($cart->recovered) : ?>
-                                        <span class="acr-recovered-indicator"><?php echo esc_html('✓ Recovered'); ?></span>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?php echo esc_html(date('M j, Y g:i A', strtotime($cart->created_at))); ?></td>
-                                <td><?php echo esc_html(date('M j, Y g:i A', strtotime($cart->updated_at))); ?></td>
-                                <td>
-                                    <?php if ($cart->recovery_sent) : ?>
-                                        <div class="acr-recovery-sent">
-                                            <?php echo esc_html('✉️ Sent'); ?><br>
-                                            <small><?php echo esc_html(date('M j, g:i A', strtotime($cart->recovery_sent_at))); ?></small>
-                                        </div>
-                                    <?php else : ?>
-                                        <em><?php echo esc_html('Not sent'); ?></em>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php if ($cart->recovery_token) : ?>
-                                        <a href="<?php echo esc_url(add_query_arg(array('acr_recover' => $cart->recovery_token, 'session' => $cart->session_id), wc_get_cart_url())); ?>" target="_blank" class="button button-small">
-                                            <?php echo esc_html('View Recovery Link'); ?>
-                                        </a>
-                                        <form method="post" action="" style="display: inline;">
-                                            <?php wp_nonce_field('acr_send_recovery_email_nonce'); ?>
-                                            <input type="hidden" name="acr_send_recovery_email" value="1">
-                                            <input type="hidden" name="cart_id" value="<?php echo esc_attr($cart->id); ?>">
-                                            <button type="submit" class="button button-small" style="margin-left: 5px;">
-                                                <?php echo esc_html('Send Email'); ?>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
-                                    <form method="post" action="" style="display: inline;">
-                                        <?php wp_nonce_field('acr_delete_cart_nonce'); ?>
-                                        <input type="hidden" name="acr_delete_cart" value="1">
-                                        <input type="hidden" name="cart_id" value="<?php echo esc_attr($cart->id); ?>">
-                                        <button type="submit" class="button button-small button-link-delete" style="margin-left: 5px;" onclick="return confirm('Are you sure you want to delete this abandoned cart?');">
-                                            <?php echo esc_html('Delete'); ?>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-<?php
-    }
+    // Admin page rendering is handled by Admin_Interface
 
     /**
      * Get or create session ID
