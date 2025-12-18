@@ -1,6 +1,6 @@
 <?php
 
-namespace Auto_Cart_Recovery\Traits;
+namespace Auto_Cart_Recovery\Utils;
 
 defined('ABSPATH') || exit;
 

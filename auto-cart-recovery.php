@@ -16,9 +16,9 @@ if (!defined('ABSPATH')) {
 }
 
 // Load the singleton trait
-require_once plugin_dir_path(__FILE__) . 'traits/singleton.php';
+require_once plugin_dir_path(__FILE__) . 'utils/singleton.php';
 
-use Auto_Cart_Recovery\Traits\Singleton;
+use Auto_Cart_Recovery\Utils\Singleton;
 
 /**
  * Final class for auto cart recovery plugin

@@ -2,7 +2,7 @@
 
 namespace Auto_Cart_Recovery;
 
-use Auto_Cart_Recovery\Traits\Singleton;
+use Auto_Cart_Recovery\Utils\Singleton;
 
 defined('ABSPATH') || exit;
 
