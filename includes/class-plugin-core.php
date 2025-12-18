@@ -193,18 +193,6 @@ class Plugin_Core
                 </div>
             </div>
 
-            <div style="background: #fff; padding: 20px; margin: 20px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <h2><?php echo esc_html('✨ Plugin Features'); ?></h2>
-                <ul style="line-height: 2;">
-                    <li><?php echo esc_html('✅ Automatic cart tracking for all visitors'); ?></li>
-                    <li><?php echo esc_html('✅ Email capture during checkout'); ?></li>
-                    <li><?php echo esc_html('✅ Automated recovery emails sent after 1 hour'); ?></li>
-                    <li><?php echo esc_html('✅ One-click cart restoration links'); ?></li>
-                    <li><?php echo esc_html('✅ Real-time statistics and monitoring'); ?></li>
-                    <li><?php echo esc_html('✅ Works with guest and registered users'); ?></li>
-                </ul>
-            </div>
-
             <h2><?php echo esc_html('Recent Abandoned Carts'); ?></h2>
             <table class="wp-list-table widefat fixed striped">
                 <thead>
