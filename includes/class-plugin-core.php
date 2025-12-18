@@ -16,6 +16,11 @@ class Plugin_Core
 
     private $table_name;
 
+    /**
+     * Initialize the plugin core functionalities.
+     * 
+     * @return void
+     */
     public function init()
     {
         global $wpdb;
@@ -58,6 +63,11 @@ class Plugin_Core
         add_action('template_redirect', array($this, 'handle_recovery_link'));
     }
 
+    /**
+     * Add admin menu for the plugin.
+     * 
+     * @return void
+     */
     public function add_admin_menu()
     {
         add_menu_page(
@@ -71,6 +81,11 @@ class Plugin_Core
         );
     }
 
+    /**
+     * Enqueue admin styles.
+     * 
+     * @return void
+     */
     public function enqueue_admin_styles($hook_suffix)
     {
         if ($hook_suffix !== 'toplevel_page_auto-cart-recovery') {
@@ -85,6 +100,11 @@ class Plugin_Core
         );
     }
 
+    /**
+     * Admin page rendering.
+     * 
+     * @return void
+     */
     public function admin_page()
     {
         global $wpdb;
@@ -343,6 +363,11 @@ class Plugin_Core
 <?php
     }
 
+    /**
+     * Get or create session ID
+     * 
+     * @return void
+     */
     private function get_session_id() {
         if (isset($_COOKIE['acr_session_id'])) {
             return sanitize_text_field($_COOKIE['acr_session_id']);
@@ -355,6 +380,8 @@ class Plugin_Core
 
     /**
      * Cart tracking
+     * 
+     * @return void
      */
     public function cart_tracking() {
         // Track cart for logged-in users
@@ -449,10 +476,21 @@ class Plugin_Core
             });
         }
     }
-     public function track_cart($cart_item_key = null, $product_id = null, $quantity = null, $variation_id = null, $variation = null, $cart_item_data = null) {
+    
+    /**
+     * Track cart contents
+     * 
+     * @return void
+     */
+    public function track_cart($cart_item_key = null, $product_id = null, $quantity = null, $variation_id = null, $variation = null, $cart_item_data = null) {
         $this->track_cart_simple();
     }
     
+    /**
+     * Cart simple tracking.
+     * 
+     * @return void
+     */
     public function track_cart_simple() {
         if (is_admin()) {
             return;
@@ -521,6 +559,11 @@ class Plugin_Core
         }
     }
     
+    /**
+     * Email form checkout capturing
+     * 
+     * @return void
+     */
     public function capture_email_from_checkout($post_data) {
         parse_str($post_data, $data);
         
@@ -539,6 +582,12 @@ class Plugin_Core
             );
         }
     }
+
+    /**
+     * Get user email.
+     * 
+     * @return string
+     */
     private function get_user_email() {
         $user = wp_get_current_user();
         if ($user->ID) {
@@ -547,6 +596,11 @@ class Plugin_Core
         return null;
     }
     
+    /**
+     * Abandoned cart clearing
+     * 
+     * @return void
+     */
     public function clear_abandoned_cart($order_id) {
         global $wpdb;
         
@@ -565,6 +619,11 @@ class Plugin_Core
         );
     }
     
+    /**
+     * Checkout send and recovery email
+     * 
+     * @return void
+     */
     public function check_and_send_recovery_emails() {
         global $wpdb;
         
@@ -587,7 +646,12 @@ class Plugin_Core
             $this->send_recovery_email($cart);
         }
     }
-    
+        
+    /**
+     * Send recovery email
+     * 
+     * @return void
+     */
     private function send_recovery_email($cart) {
         global $wpdb;
         
@@ -672,6 +736,11 @@ class Plugin_Core
         }
     }
     
+    /**
+     * Coupon creating method
+     * 
+     * @return string
+     */
     private function create_recovery_coupon() {
         // Generate unique coupon code
         $coupon_code = 'RECOVER-' . strtoupper(wp_generate_password(8, false));
