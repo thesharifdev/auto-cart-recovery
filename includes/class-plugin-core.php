@@ -79,9 +79,9 @@ class Plugin_Core
 
         wp_enqueue_style(
             'acr-admin-style',
-            plugin_dir_url(dirname(dirname(__FILE__))) . 'assets/css/style.css',
+            plugins_url('assets/css/style.css', dirname(__FILE__)),
             array(),
-            '1.0.0'
+            ACR_VERSION
         );
     }
 
