@@ -522,6 +522,9 @@ class Plugin_Core
             return;
         }
         
+        // Create coupon for recovery email
+        $coupon_code = $this->create_recovery_coupon();
+        
         $recovery_url = add_query_arg(array(
             'acr_recover' => $cart->recovery_token,
             'session' => $cart->session_id
@@ -560,6 +563,12 @@ class Plugin_Core
                     
                     <p><strong>Total: %s</strong></p>
                     
+                    <div style="margin: 30px 0; padding: 20px; background: #f0f6fc; border-left: 4px solid #00a32a; border-radius: 5px;">
+                        <h3 style="color: #00a32a; margin-top: 0;">Special Offer: 20%% Off!</h3>
+                        <p>Use coupon code: <strong style="font-size: 18px; color: #00a32a;">%s</strong></p>
+                        <p style="font-size: 12px; color: #666;">Valid for 24 hours only</p>
+                    </div>
+                    
                     <div style="margin: 30px 0;">
                         <a href="%s" style="background-color: #0073aa; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
                             Complete Your Purchase
@@ -570,7 +579,7 @@ class Plugin_Core
                 </div>
             </body>
             </html>
-        ', $items_html, wc_price($cart->cart_total), esc_url($recovery_url));
+        ', $items_html, wc_price($cart->cart_total), $coupon_code, esc_url($recovery_url));
         
         $headers = array('Content-Type: text/html; charset=UTF-8');
         
@@ -588,6 +597,45 @@ class Plugin_Core
                 array('%d')
             );
         }
+    }
+    
+    private function create_recovery_coupon() {
+        // Generate unique coupon code
+        $coupon_code = 'RECOVER-' . strtoupper(wp_generate_password(8, false));
+        
+        // Check if coupon already exists
+        $existing_coupon = get_page_by_title($coupon_code, OBJECT, 'shop_coupon');
+        if ($existing_coupon) {
+            return $coupon_code;
+        }
+        
+        // Create new coupon
+        $coupon_post = array(
+            'post_title' => $coupon_code,
+            'post_content' => '',
+            'post_status' => 'publish',
+            'post_type' => 'shop_coupon',
+        );
+        
+        $coupon_id = wp_insert_post($coupon_post);
+        
+        if ($coupon_id) {
+            // Set coupon meta data
+            update_post_meta($coupon_id, 'discount_type', 'percent');
+            update_post_meta($coupon_id, 'coupon_amount', '20');
+            update_post_meta($coupon_id, 'individual_use', 'yes');
+            update_post_meta($coupon_id, 'exclude_sale_items', 'no');
+            update_post_meta($coupon_id, 'minimum_amount', '');
+            update_post_meta($coupon_id, 'maximum_amount', '');
+            update_post_meta($coupon_id, 'usage_limit', '');
+            update_post_meta($coupon_id, 'usage_limit_per_user', '1');
+            
+            // Set expiry date to 1 day from now
+            $expiry_date = date('Y-m-d', strtotime('+1 day'));
+            update_post_meta($coupon_id, 'expiry_date', $expiry_date);
+        }
+        
+        return $coupon_code;
     }
     
     public function handle_recovery_link() {
