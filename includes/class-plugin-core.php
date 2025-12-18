@@ -104,15 +104,18 @@ class Plugin_Core
             return;
         }
 
-        $stats = $wpdb->get_row("
+        // Only count carts as abandoned if they're older than 1 hour
+        $time_threshold = date('Y-m-d H:i:s', strtotime('-1 hour'));
+        
+        $stats = $wpdb->get_row($wpdb->prepare("
             SELECT 
-                COUNT(*) as total_abandoned,
-                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN status = 'active' AND updated_at < %s THEN 1 ELSE 0 END) as total_abandoned,
+                SUM(CASE WHEN status = 'active' AND updated_at >= %s THEN 1 ELSE 0 END) as active,
                 SUM(CASE WHEN recovered = 1 THEN 1 ELSE 0 END) as recovered,
                 SUM(CASE WHEN recovery_sent = 1 THEN 1 ELSE 0 END) as emails_sent,
                 SUM(CASE WHEN recovered = 1 THEN cart_total ELSE 0 END) as recovered_value
             FROM {$this->table_name}
-        ");
+        ", $time_threshold, $time_threshold));
 
         // Handle null values - ensure all properties exist with defaults
         if (!$stats) {
@@ -132,11 +135,12 @@ class Plugin_Core
             $stats->recovered_value = $stats->recovered_value ?? 0;
         }
 
-        $recent_carts = $wpdb->get_results("
+        $recent_carts = $wpdb->get_results($wpdb->prepare("
             SELECT * FROM {$this->table_name}
+            WHERE status = 'active' AND updated_at < %s
             ORDER BY created_at DESC
             LIMIT 20
-        ");
+        ", $time_threshold));
 
         if (!$recent_carts) {
             $recent_carts = array();
