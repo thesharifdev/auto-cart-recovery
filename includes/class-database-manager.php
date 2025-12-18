@@ -90,12 +90,22 @@ class Database_Manager
         global $wpdb;
 
         if ($is_update && $where) {
+            // Build where formats to match each where value type
+            $where_formats = array();
+            foreach ($where as $w_val) {
+                if (is_int($w_val) || ctype_digit((string) $w_val)) {
+                    $where_formats[] = '%d';
+                } else {
+                    $where_formats[] = '%s';
+                }
+            }
+
             return $wpdb->update(
                 $this->table_name,
                 $data,
                 $where,
                 array_fill(0, count($data), '%s'),
-                array('%d')
+                $where_formats
             );
         } else {
             return $wpdb->insert(

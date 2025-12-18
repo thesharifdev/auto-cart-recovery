@@ -34,6 +34,8 @@ class Cart_Tracker
 
         $session_id = wp_generate_password(32, false);
         setcookie('acr_session_id', $session_id, time() + (86400 * 30), '/');
+        // Ensure the cookie is available during this request (useful for AJAX flows)
+        $_COOKIE['acr_session_id'] = $session_id;
         return $session_id;
     }
 

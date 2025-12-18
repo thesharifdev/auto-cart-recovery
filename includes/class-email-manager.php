@@ -104,7 +104,11 @@ class Email_Manager
     {
         $coupon_code = 'RECOVER-' . strtoupper(wp_generate_password(8, false));
 
-        $existing_coupon = get_page_by_title($coupon_code, OBJECT, 'shop_coupon');
+        global $wpdb;
+        $existing_coupon = $wpdb->get_var($wpdb->prepare(
+            "SELECT ID FROM {$wpdb->posts} WHERE post_title = %s AND post_type = 'shop_coupon' LIMIT 1",
+            $coupon_code
+        ));
         if ($existing_coupon) {
             return $coupon_code;
         }
