@@ -23,7 +23,6 @@ class ACR_Helpers {
 		$defaults = array(
 			'enabled'                 => 1,
 			'delay_minutes'           => 30,
-			'max_reminders'           => 1,
 			'discount_type'           => 'percent',
 			'discount_amount'         => 20,
 			'coupon_expiry_days'      => 1,

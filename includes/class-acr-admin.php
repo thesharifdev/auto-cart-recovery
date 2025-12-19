@@ -113,7 +113,6 @@ class ACR_Admin {
 
 		$output['enabled']            = ! empty( $input['enabled'] ) ? 1 : 0;
 		$output['delay_minutes']      = isset( $input['delay_minutes'] ) ? absint( $input['delay_minutes'] ) : 30;
-		$output['max_reminders']      = isset( $input['max_reminders'] ) ? absint( $input['max_reminders'] ) : 1;
 		$output['discount_type']      = in_array( $input['discount_type'] ?? 'percent', array( 'percent', 'fixed_cart' ), true ) ? $input['discount_type'] : 'percent';
 		$output['discount_amount']    = isset( $input['discount_amount'] ) ? floatval( $input['discount_amount'] ) : 0;
 		$output['coupon_expiry_days'] = isset( $input['coupon_expiry_days'] ) ? absint( $input['coupon_expiry_days'] ) : 7;
@@ -372,14 +371,6 @@ class ACR_Admin {
 							<input type="number" min="5" name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[delay_minutes]" value="<?php echo esc_attr( $settings['delay_minutes'] ); ?>" />
 						</td>
 					</tr>
-
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Maximum reminders per cart', 'auto-cart-recovery' ); ?></th>
-						<td>
-							<input type="number" min="1" name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[max_reminders]" value="<?php echo esc_attr( $settings['max_reminders'] ); ?>" />
-						</td>
-					</tr>
-
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Discount type', 'auto-cart-recovery' ); ?></th>
 						<td>

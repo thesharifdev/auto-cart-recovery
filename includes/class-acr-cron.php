@@ -107,7 +107,6 @@ class ACR_Cron {
 	 *
 	 * @param int   $cart_id  Cart post ID.
 	 * @param array $settings Settings.
-	 * @param bool  $manual   Whether this is a manual send (ignores max_reminders).
 	 */
 	protected static function process_single_cart( $cart_id, $settings, $manual = false ) {
 		$email = get_post_meta( $cart_id, '_acr_email', true );
@@ -119,8 +118,7 @@ class ACR_Cron {
 
 		$already_sent = (int) get_post_meta( $cart_id, '_acr_email_count', true );
 
-		// For automatic cron sends, respect max_reminders and update status.
-		if ( ! $manual && $already_sent >= (int) $settings['max_reminders'] ) {
+		if ( ! $manual ) {
 			update_post_meta( $cart_id, '_acr_status', $settings['status_abandoned'] );
 			return;
 		}
