@@ -41,6 +41,11 @@ class ACR_Admin {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_post_acr_send_email', array( $this, 'handle_manual_email' ) );
+
+		// Keep dashboard stats fresh when carts/emails change.
+		add_action( 'acr_cart_captured', array( $this, 'flush_dashboard_cache' ) );
+		add_action( 'acr_cart_recovered', array( $this, 'flush_dashboard_cache' ) );
+		add_action( 'acr_recovery_email_sent', array( $this, 'flush_dashboard_cache' ) );
 	}
 
 	/**
@@ -89,6 +94,13 @@ class ACR_Admin {
 		);
 	}
 
+	/**
+	 * Flush cached dashboard stats transient.
+	 */
+	public function flush_dashboard_cache() {
+		delete_transient( 'acr_dashboard_stats' );
+	}
+	
 	/**
 	 * Sanitize settings.
 	 *
