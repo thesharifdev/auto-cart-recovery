@@ -57,6 +57,22 @@ class Database_Manager
     }
 
     /**
+     * Get cart by session ID (any status).
+     * Add this method to the Database_Manager class
+     * 
+     * @param string $session_id Session ID
+     * @return object|null
+     */
+    public function get_cart_by_session_any_status($session_id)
+    {
+        global $wpdb;
+        return $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$this->table_name} WHERE session_id = %s ORDER BY id DESC LIMIT 1",
+            $session_id
+        ));
+    }
+
+    /**
      * Check if table exists.
      * 
      * @return bool

@@ -10,6 +10,7 @@ defined('ABSPATH') || exit;
 class Cart_Tracker
 {
     private $database_manager;
+    private $tracking_in_progress = false; // Prevent multiple simultaneous tracking
 
     /**
      * Constructor
@@ -46,7 +47,7 @@ class Cart_Tracker
      */
     public function init_tracking()
     {
-        // Track cart for logged-in users
+        // Track cart for logged-in users on wp_footer
         if (is_user_logged_in() && !is_admin()) {
             add_action('wp_footer', array($this, 'track_cart'));
         }
@@ -59,13 +60,22 @@ class Cart_Tracker
      */
     public function track_cart()
     {
+        // Prevent duplicate tracking in the same request
+        if ($this->tracking_in_progress) {
+            return;
+        }
+        
+        $this->tracking_in_progress = true;
+
         if (is_admin()) {
+            $this->tracking_in_progress = false;
             return;
         }
 
         $cart = WC()->cart;
 
         if (!$cart || $cart->is_empty()) {
+            $this->tracking_in_progress = false;
             return;
         }
 
@@ -83,7 +93,8 @@ class Cart_Tracker
 
         $cart_total = $cart->get_total('raw');
 
-        $existing = $this->database_manager->get_cart_by_session($session_id);
+        // Check for existing cart by session_id ONLY (don't filter by status)
+        $existing = $this->database_manager->get_cart_by_session_any_status($session_id);
 
         $data = array(
             'cart_data' => serialize($cart_data),
@@ -100,8 +111,20 @@ class Cart_Tracker
         }
 
         if ($existing) {
+            // Update existing cart
+            // Only reset status if it was 'recovered' - keep 'active' as is
+            if ($existing->status === 'recovered') {
+                $data['status'] = 'active';
+                $data['recovered'] = 0;
+                // Generate new recovery token for the new abandonment
+                $data['recovery_token'] = wp_generate_password(32, false);
+                $data['recovery_sent'] = 0;
+                $data['recovery_sent_at'] = null;
+            }
+
             $this->database_manager->save_cart($data, array('id' => $existing->id), true);
         } else {
+            // Create new cart record
             $data['session_id'] = $session_id;
             $data['created_at'] = current_time('mysql');
             $data['status'] = 'active';
@@ -109,6 +132,8 @@ class Cart_Tracker
 
             $this->database_manager->save_cart($data);
         }
+
+        $this->tracking_in_progress = false;
     }
 
     /**
@@ -125,11 +150,16 @@ class Cart_Tracker
             $session_id = $this->get_session_id();
             $email = sanitize_email($data['billing_email']);
 
-            $this->database_manager->save_cart(
-                array('email' => $email, 'updated_at' => current_time('mysql')),
-                array('session_id' => $session_id, 'status' => 'active'),
-                true
-            );
+            // Update existing cart with email
+            $existing = $this->database_manager->get_cart_by_session_any_status($session_id);
+            
+            if ($existing) {
+                $this->database_manager->save_cart(
+                    array('email' => $email, 'updated_at' => current_time('mysql')),
+                    array('id' => $existing->id),
+                    true
+                );
+            }
         }
     }
 

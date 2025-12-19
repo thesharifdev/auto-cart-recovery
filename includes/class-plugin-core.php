@@ -55,9 +55,9 @@ class Plugin_Core
 
         // Cart tracking hooks
         add_action('init', array($this->tracker, 'init_tracking'));
-        add_action('woocommerce_add_to_cart', array($this->tracker, 'track_cart'), 10, 6);
-        add_action('woocommerce_cart_item_removed', array($this->tracker, 'track_cart'), 10);
-        add_action('woocommerce_update_cart_action_cart_updated', array($this->tracker, 'track_cart'), 10);
+        // add_action('woocommerce_add_to_cart', array($this->tracker, 'track_cart'), 10, 6);
+        // add_action('woocommerce_cart_item_removed', array($this->tracker, 'track_cart'), 10);
+        // add_action('woocommerce_update_cart_action_cart_updated', array($this->tracker, 'track_cart'), 10);
         add_action('woocommerce_checkout_update_order_review', array($this->tracker, 'capture_checkout_email'));
 
         // Order completion -> mark recovered
