@@ -36,8 +36,9 @@ class ACR_Emails {
 		$discount_type   = ! empty( $settings['discount_type'] ) ? $settings['discount_type'] : 'percent';
 		$discount_amount = isset( $settings['discount_amount'] ) ? (float) $settings['discount_amount'] : 0;
 
+		// Ensure there is always a positive discount amount; fall back to default (10) if misconfigured.
 		if ( $discount_amount <= 0 ) {
-			return 0;
+			$discount_amount = 10;
 		}
 
 		$coupon_code = apply_filters( 'acr_coupon_code', wc_generate_coupon_code(), $cart_id );
@@ -96,6 +97,7 @@ class ACR_Emails {
 		$body    = isset( $settings['email_body'] ) ? $settings['email_body'] : __( 'We saved your cart for you. Click the button below to restore your cart and apply your discount.', 'auto-cart-recovery' );
 
 		$coupon_message = '';
+		$cart_summary   = '';
 
 		if ( $coupon_id ) {
 			$coupon_code    = get_post_field( 'post_title', $coupon_id );
@@ -113,7 +115,46 @@ class ACR_Emails {
 			}
 		}
 
-		$button_label = __( 'Restore my cart', 'auto-cart-recovery' );
+		// Build simple cart summary from stored meta.
+		$items_json = get_post_meta( $cart_id, '_acr_cart_items', true );
+		$total      = get_post_meta( $cart_id, '_acr_cart_total', true );
+
+		if ( $items_json ) {
+			$items = json_decode( $items_json, true );
+
+			if ( is_array( $items ) && ! empty( $items ) ) {
+				$cart_summary .= '<ul>';
+
+				foreach ( $items as $item ) {
+					$product_id = isset( $item['product_id'] ) ? (int) $item['product_id'] : 0;
+					$qty        = isset( $item['quantity'] ) ? (int) $item['quantity'] : 1;
+					$name       = '';
+
+					if ( $product_id && function_exists( 'wc_get_product' ) ) {
+						$product = wc_get_product( $product_id );
+
+						if ( $product ) {
+							$name = $product->get_name();
+						}
+					}
+
+					if ( ! $name ) {
+						$name = __( 'Product', 'auto-cart-recovery' );
+					}
+
+					$cart_summary .= '<li>' . esc_html( $name ) . ' &times; ' . esc_html( $qty ) . '</li>';
+				}
+
+				$cart_summary .= '</ul>';
+			}
+		}
+
+		if ( $total ) {
+			$total_formatted = function_exists( 'wc_price' ) ? wc_price( (float) $total ) : number_format_i18n( (float) $total, 2 );
+			$cart_summary   .= '<p><strong>' . esc_html__( 'Cart total:', 'auto-cart-recovery' ) . '</strong> ' . wp_kses_post( $total_formatted ) . '</p>';
+		}
+
+		$button_label = __( 'Go to checkout', 'auto-cart-recovery' );
 
 		// Basic HTML email content.
 		$message  = '<html><body>';
@@ -122,6 +163,10 @@ class ACR_Emails {
 
 		if ( $coupon_message ) {
 			$message .= '<p>' . wp_kses_post( $coupon_message ) . '</p>';
+		}
+
+		if ( $cart_summary ) {
+			$message .= $cart_summary;
 		}
 
 		$message .= '<p><a href="' . esc_url( $url ) . '" style="display:inline-block;padding:10px 20px;background:#2271b1;color:#ffffff;text-decoration:none;border-radius:4px;">' . esc_html( $button_label ) . '</a></p>';

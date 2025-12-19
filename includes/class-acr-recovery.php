@@ -99,8 +99,8 @@ class ACR_Recovery {
 		 */
 		do_action( 'acr_recovery_link_used', $cart_id );
 
-		// Redirect to cart.
-		wp_safe_redirect( wc_get_cart_url() );
+		// Redirect directly to checkout with restored cart and applied coupon.
+		wp_safe_redirect( wc_get_checkout_url() );
 		exit;
 	}
 

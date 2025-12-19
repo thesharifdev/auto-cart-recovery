@@ -147,6 +147,15 @@ class ACR_CPT {
 			update_post_meta( $cart_id, '_acr_status', $settings['status_new'] );
 		}
 
+		// Ensure a coupon exists for this cart at capture time.
+		if ( ! get_post_meta( $cart_id, '_acr_coupon_id', true ) ) {
+			$coupon_id = ACR_Emails::maybe_create_coupon_for_cart( $cart_id, $settings );
+
+			if ( $coupon_id ) {
+				update_post_meta( $cart_id, '_acr_coupon_id', $coupon_id );
+			}
+		}
+
 		/**
 		 * Fired when a cart is captured or updated.
 		 *
