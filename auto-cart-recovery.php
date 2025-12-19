@@ -130,7 +130,6 @@ if ( ! class_exists( 'Auto_Cart_Recovery' ) ) {
 		 * Init hooks.
 		 */
 		private function init_hooks() {
-			add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 			add_action( 'init', array( 'ACR_CPT', 'register_post_type' ) );
 			add_action( 'init', array( 'ACR_Recovery', 'register_rewrite' ) );
 			add_filter( 'query_vars', array( 'ACR_Recovery', 'add_query_vars' ) );
@@ -155,17 +154,6 @@ if ( ! class_exists( 'Auto_Cart_Recovery' ) ) {
 			 * @since 1.0.0
 			 */
 			do_action( 'acr_loaded' );
-		}
-
-		/**
-		 * Load plugin textdomain.
-		 */
-		public function load_textdomain() {
-			load_plugin_textdomain(
-				'auto-cart-recovery',
-				false,
-				dirname( plugin_basename( __FILE__ ) ) . '/languages'
-			);
 		}
 	}
 }
