@@ -60,11 +60,27 @@ class ACR_Abandoned_Cart_List_Table extends WP_List_Table {
 		$sortable              = array();
 		$this->_column_headers = array( $columns, $hidden, $sortable );
 
+		$settings = ACR_Helpers::get_settings();
+
 		$args = array(
 			'post_type'      => Auto_Cart_Recovery::CPT_SLUG,
 			'post_status'    => 'publish',
 			'posts_per_page' => $per_page,
 			'paged'          => $current_page,
+			// Only show carts that are actually abandoned/recovered/cancelled etc.
+			// Hide carts that are still in "new" state (not yet considered abandoned).
+			'meta_query'     => array(
+				'relation' => 'OR',
+				array(
+					'key'     => '_acr_status',
+					'value'   => $settings['status_new'],
+					'compare' => '!=',
+				),
+				array(
+					'key'     => '_acr_status',
+					'compare' => 'NOT EXISTS',
+				),
+			),
 		);
 
 		$query = new WP_Query( $args );

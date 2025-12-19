@@ -130,7 +130,6 @@ if ( ! class_exists( 'Auto_Cart_Recovery' ) ) {
 		 * Init hooks.
 		 */
 		private function init_hooks() {
-			add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 			add_action( 'init', array( 'ACR_CPT', 'register_post_type' ) );
 			add_action( 'init', array( 'ACR_Recovery', 'register_rewrite' ) );
 			add_filter( 'query_vars', array( 'ACR_Recovery', 'add_query_vars' ) );
@@ -155,17 +154,6 @@ if ( ! class_exists( 'Auto_Cart_Recovery' ) ) {
 			 * @since 1.0.0
 			 */
 			do_action( 'acr_loaded' );
-		}
-
-		/**
-		 * Load plugin textdomain.
-		 */
-		public function load_textdomain() {
-			load_plugin_textdomain(
-				'auto-cart-recovery',
-				false,
-				dirname( plugin_basename( __FILE__ ) ) . '/languages'
-			);
 		}
 	}
 }
@@ -239,68 +227,5 @@ function acr_deactivation() {
 	do_action( 'acr_deactivated' );
 }
 
-/**
- * Uninstall hook.
- */
-register_uninstall_hook( __FILE__, 'acr_uninstall' );
-
-/**
- * On uninstall - clean up data.
- */
-function acr_uninstall() {
-	// Delete CPT posts.
-	$carts = get_posts(
-		array(
-			'post_type'      => Auto_Cart_Recovery::CPT_SLUG,
-			'posts_per_page' => -1,
-			'post_status'    => 'any',
-			'fields'         => 'ids',
-		)
-	);
-
-	foreach ( $carts as $cart_id ) {
-		wp_delete_post( $cart_id, true );
-	}
-
-	// Optional: delete generated coupons (shop_coupon CPT) created by this plugin.
-	/**
-	 * Filter whether Auto Cart Recovery should delete generated coupons on uninstall.
-	 *
-	 * @param bool $delete_coupons Default false.
-	 */
-	$delete_coupons = apply_filters( 'acr_delete_coupons_on_uninstall', false );
-
-	if ( $delete_coupons ) {
-		$coupons = get_posts(
-			array(
-				'post_type'      => 'shop_coupon',
-				'posts_per_page' => -1,
-				'post_status'    => 'any',
-				'fields'         => 'ids',
-				'meta_key'       => '_acr_coupon',
-				'meta_value'     => 'yes',
-			)
-		);
-
-		foreach ( $coupons as $coupon_id ) {
-			wp_delete_post( $coupon_id, true );
-		}
-	}
-
-	// Delete options.
-	delete_option( 'acr_activation_time' );
-	delete_option( 'acr_plugin_version' );
-	delete_option( Auto_Cart_Recovery::OPTION_SETTINGS );
-
-	// Delete transients.
-	delete_transient( 'acr_dashboard_stats' );
-
-	/**
-	 * Fired after Auto Cart Recovery uninstall cleanup.
-	 *
-	 * @since 1.0.0
-	 */
-	do_action( 'acr_uninstalled' );
-}
 
 
