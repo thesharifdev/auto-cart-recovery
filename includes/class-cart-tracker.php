@@ -53,22 +53,6 @@ class Cart_Tracker
     }
 
     /**
-     * Track cart contents on add to cart.
-     * 
-     * @param string $cart_item_key Cart item key
-     * @param int $product_id Product ID
-     * @param int $quantity Quantity
-     * @param int $variation_id Variation ID
-     * @param array $variation Variation data
-     * @param array $cart_item_data Cart item data
-     * @return void
-     */
-    public function track_cart_on_add($cart_item_key = null, $product_id = null, $quantity = null, $variation_id = null, $variation = null, $cart_item_data = null)
-    {
-        $this->track_cart();
-    }
-
-    /**
      * Track cart contents.
      * 
      * @return void
