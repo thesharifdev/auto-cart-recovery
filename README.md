@@ -6,9 +6,14 @@ This plugin automatically tracks abandoned carts, sends recovery emails with cou
 Screenshots
 -----------
 
-- `screenshots/dashboard.png` – Auto Cart Recovery dashboard cards (total carts, recovered carts, recovered revenue, emails sent).
-- `screenshots/abandoned-carts.png` – Abandoned Carts table with manual “Send email” action.
-- `screenshots/settings.png` – Plugin settings page (email delay, discount type/amount, coupon expiry, etc.).
+- ![Auto Cart Recovery dashboard](screenshots/dashboard.png)  
+  Auto Cart Recovery dashboard cards (total carts, recovered carts, recovered revenue, emails sent).
+
+- ![Abandoned Carts table](screenshots/abandoned-carts.png)  
+  Abandoned Carts table with manual “Send email” action.
+
+- ![Settings page](screenshots/settings.png)  
+  Plugin settings page (email delay, discount type/amount, coupon expiry, etc.).
 
 Requirements
 ------------
