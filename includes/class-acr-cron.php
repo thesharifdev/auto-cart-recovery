@@ -145,13 +145,6 @@ class ACR_Cron {
 			update_post_meta( $cart_id, '_acr_email_count', $already_sent + 1 );
 			update_post_meta( $cart_id, '_acr_last_email_sent', current_time( 'timestamp' ) );
 
-			// As soon as at least one recovery email is sent, mark the cart as abandoned
-			// so the status in the admin list reflects that it is now an abandoned cart.
-			$current_status = get_post_meta( $cart_id, '_acr_status', true );
-			if ( $current_status === $settings['status_new'] ) {
-				update_post_meta( $cart_id, '_acr_status', $settings['status_abandoned'] );
-			}
-
 			/**
 			 * Fired when a recovery email is successfully sent.
 			 *
