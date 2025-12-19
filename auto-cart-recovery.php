@@ -3,7 +3,7 @@
  * Plugin Name:       Auto Cart Recovery
  * Description:       Recover abandoned WooCommerce carts using native WordPress systems (CPT, cron, transients, wp_mail, and WooCommerce coupons).
  * Version:           1.0.0
- * Author:            Your Name
+ * Author:            Sharif
  * Text Domain:       auto-cart-recovery
  * Domain Path:       /languages
  * Requires Plugins:  woocommerce
