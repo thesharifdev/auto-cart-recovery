@@ -24,8 +24,8 @@ class ACR_Cron {
 	public static function add_custom_schedules( $schedules ) {
 		if ( ! isset( $schedules['fifteen_minutes'] ) ) {
 			$schedules['fifteen_minutes'] = array(
-				'interval' => 15 * 60,
-				'display'  => __( 'Every 15 minutes', 'auto-cart-recovery' ),
+				'interval' => 5 * 60,
+				'display'  => __( 'Every 5 minutes', 'auto-cart-recovery' ),
 			);
 		}
 

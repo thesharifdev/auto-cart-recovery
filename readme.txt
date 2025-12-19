@@ -47,7 +47,7 @@ The plugin tracks cart activity, creates personalized coupons, and sends secure 
 
 After activation:
 * A custom post type `acr_abandoned_cart` is registered
-* A cron job runs every 15 minutes
+* A cron job runs every 5 minutes
 * Default settings are created automatically
 
 == Screenshots ==
