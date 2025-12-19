@@ -23,10 +23,6 @@ class ACR_Emails {
 	 * @return int Coupon post ID or 0.
 	 */
 	public static function maybe_create_coupon_for_cart( $cart_id, $settings ) {
-		if ( ! function_exists( 'wc_generate_coupon_code' ) ) {
-			return 0;
-		}
-
 		$existing_id = (int) get_post_meta( $cart_id, '_acr_coupon_id', true );
 
 		if ( $existing_id ) {
@@ -36,12 +32,19 @@ class ACR_Emails {
 		$discount_type   = ! empty( $settings['discount_type'] ) ? $settings['discount_type'] : 'percent';
 		$discount_amount = isset( $settings['discount_amount'] ) ? (float) $settings['discount_amount'] : 0;
 
-		// Ensure there is always a positive discount amount; fall back to default (10) if misconfigured.
+		// Ensure there is always a positive discount amount; fall back to default (20) if misconfigured.
 		if ( $discount_amount <= 0 ) {
-			$discount_amount = 10;
+			$discount_amount = 20;
 		}
 
-		$coupon_code = apply_filters( 'acr_coupon_code', wc_generate_coupon_code(), $cart_id );
+		// Generate a coupon code, with a safe fallback if WooCommerce helper is not available.
+		if ( function_exists( 'wc_generate_coupon_code' ) ) {
+			$raw_code = wc_generate_coupon_code();
+		} else {
+			$raw_code = strtolower( wp_generate_password( 10, false, false ) );
+		}
+
+		$coupon_code = apply_filters( 'acr_coupon_code', $raw_code, $cart_id );
 
 		$coupon_id = wp_insert_post(
 			array(
