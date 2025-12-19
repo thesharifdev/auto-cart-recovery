@@ -1,7 +1,6 @@
 Auto Cart Recovery
 ==================
 
-Recover abandoned WooCommerce carts using native WordPress systems (CPT, cron, transients, wp_mail, and WooCommerce coupons).  
 This plugin automatically tracks abandoned carts, sends recovery emails with coupons, and restores the cart + applies the coupon when the customer comes back.
 
 Screenshots
