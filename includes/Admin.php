@@ -44,6 +44,7 @@ class Admin {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_post_acr_send_email', array( $this, 'handle_manual_email' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
 
 		// Keep dashboard stats fresh when carts/emails change.
 		add_action( 'acr_cart_captured', array( $this, 'flush_dashboard_cache' ) );
@@ -102,6 +103,23 @@ class Admin {
 	 */
 	public function flush_dashboard_cache() {
 		delete_transient( 'acr_dashboard_stats' );
+	}
+
+	/**
+	 * Enqueue admin styles on ACR pages only.
+	 */
+	public function enqueue_admin_styles() {
+		$screen = get_current_screen();
+
+		// Check if we're on an ACR admin page
+		if ( $screen && strpos( $screen->id, 'acr-' ) !== false ) {
+			wp_enqueue_style(
+				'acr-admin-styles',
+				ACR_PLUGIN_URL . 'assets/css/style.css',
+				array(),
+				\AutoCartRecovery::VERSION
+			);
+		}
 	}
 	
 	/**
