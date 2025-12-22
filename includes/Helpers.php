@@ -1,8 +1,11 @@
 <?php
+
+namespace AutoCartRecovery;
+
 /**
  * Common helpers for Auto Cart Recovery.
  *
- * @package Auto_Cart_Recovery
+ * @package AutoCartRecovery
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Generic helpers.
  */
-class ACR_Helpers {
+class Helpers {
 
 	/**
 	 * Get plugin settings with defaults.
@@ -39,7 +42,7 @@ class ACR_Helpers {
 			'status_cancelled'        => 'cancelled',
 		);
 
-		$settings = get_option( Auto_Cart_Recovery::OPTION_SETTINGS, array() );
+		$settings = get_option( \AutoCartRecovery::OPTION_SETTINGS, array() );
 
 		if ( ! is_array( $settings ) ) {
 			$settings = array();
@@ -74,7 +77,7 @@ class ACR_Helpers {
 	public static function get_recovery_url( $token ) {
 		$url = add_query_arg(
 			array(
-				Auto_Cart_Recovery::RECOVERY_QUERY_VAR => rawurlencode( $token ),
+				\AutoCartRecovery::RECOVERY_QUERY_VAR => rawurlencode( $token ),
 			),
 			home_url( '/' )
 		);

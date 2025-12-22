@@ -1,8 +1,11 @@
 <?php
+
+namespace AutoCartRecovery;
+
 /**
  * Cron handling for Auto Cart Recovery.
  *
- * @package Auto_Cart_Recovery
+ * @package AutoCartRecovery
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Handles scheduling and processing abandoned carts.
  */
-class ACR_Cron {
+class Cron {
 
 	/**
 	 * Register custom schedules.
@@ -58,9 +61,9 @@ class ACR_Cron {
 			),
 		);
 
-		$query = new WP_Query(
+		$query = new \WP_Query(
 			array(
-				'post_type'      => Auto_Cart_Recovery::CPT_SLUG,
+				'post_type'      => \AutoCartRecovery::CPT_SLUG,
 				'post_status'    => 'publish',
 				'posts_per_page' => 50,
 				'fields'         => 'ids',
@@ -124,10 +127,10 @@ class ACR_Cron {
 		}
 
 		// Generate token and coupon.
-		$token = ACR_Helpers::generate_token();
-		$url   = ACR_Helpers::get_recovery_url( $token );
+		$token = Helpers::generate_token();
+		$url   = Helpers::get_recovery_url( $token );
 
-		$coupon_id = ACR_Emails::maybe_create_coupon_for_cart( $cart_id, $settings );
+		$coupon_id = Emails::maybe_create_coupon_for_cart( $cart_id, $settings );
 
 		if ( $coupon_id ) {
 			update_post_meta( $cart_id, '_acr_coupon_id', $coupon_id );

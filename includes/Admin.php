@@ -1,8 +1,11 @@
 <?php
+
+namespace AutoCartRecovery;
+
 /**
  * Admin UI for Auto Cart Recovery.
  *
- * @package Auto_Cart_Recovery
+ * @package AutoCartRecovery
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,12 +15,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Admin pages, settings, and notices.
  */
-class ACR_Admin {
+class Admin {
 
 	/**
 	 * Singleton instance.
 	 *
-	 * @var ACR_Admin|null
+	 * @var Admin|null
 	 */
 	private static $instance = null;
 
@@ -52,7 +55,7 @@ class ACR_Admin {
 	 * Register top-level and sub menus.
 	 */
 	public function register_menu() {
-		$cap = ACR_Helpers::get_manage_capability();
+		$cap = Helpers::get_manage_capability();
 
 		add_menu_page(
 			__( 'Auto Cart Recovery', 'auto-cart-recovery' ),
@@ -89,7 +92,7 @@ class ACR_Admin {
 	public function register_settings() {
 		register_setting(
 			'acr_settings_group',
-			Auto_Cart_Recovery::OPTION_SETTINGS,
+			\AutoCartRecovery::OPTION_SETTINGS,
 			array( $this, 'sanitize_settings' )
 		);
 	}
@@ -131,7 +134,7 @@ class ACR_Admin {
 	 * Render dashboard page.
 	 */
 	public function render_dashboard_page() {
-		if ( ! current_user_can( ACR_Helpers::get_manage_capability() ) ) {
+		if ( ! current_user_can( Helpers::get_manage_capability() ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'auto-cart-recovery' ) );
 		}
 
@@ -208,20 +211,20 @@ class ACR_Admin {
 	 * @return array
 	 */
 	protected function calculate_stats() {
-		$settings = ACR_Helpers::get_settings();
+		$settings = Helpers::get_settings();
 
-		$total = new WP_Query(
+		$total = new \WP_Query(
 			array(
-				'post_type'      => Auto_Cart_Recovery::CPT_SLUG,
+				'post_type'      => \AutoCartRecovery::CPT_SLUG,
 				'post_status'    => 'publish',
 				'posts_per_page' => 1,
 				'fields'         => 'ids',
 			)
 		);
 
-		$recovered_query = new WP_Query(
+		$recovered_query = new \WP_Query(
 			array(
-				'post_type'      => Auto_Cart_Recovery::CPT_SLUG,
+				'post_type'      => \AutoCartRecovery::CPT_SLUG,
 				'post_status'    => 'publish',
 				'posts_per_page' => -1,
 				'fields'         => 'ids',
@@ -234,9 +237,9 @@ class ACR_Admin {
 			)
 		);
 
-		$emails = new WP_Query(
+		$emails = new \WP_Query(
 			array(
-				'post_type'      => Auto_Cart_Recovery::CPT_SLUG,
+				'post_type'      => \AutoCartRecovery::CPT_SLUG,
 				'post_status'    => 'publish',
 				'posts_per_page' => -1,
 				'fields'         => 'ids',
@@ -256,7 +259,7 @@ class ACR_Admin {
 			$order_id = (int) get_post_meta( $cart_id, '_acr_recovered_order_id', true );
 
 			if ( $order_id && function_exists( 'wc_get_order' ) ) {
-				$order = wc_get_order( $order_id );
+				$order = \wc_get_order( $order_id );
 
 				if ( $order ) {
 					$recovered_amount += (float) $order->get_total();
@@ -280,11 +283,11 @@ class ACR_Admin {
 	 * Render carts page with WP_List_Table.
 	 */
 	public function render_carts_page() {
-		if ( ! current_user_can( ACR_Helpers::get_manage_capability() ) ) {
+		if ( ! current_user_can( Helpers::get_manage_capability() ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'auto-cart-recovery' ) );
 		}
 
-		$list_table = new ACR_Abandoned_Cart_List_Table();
+		$list_table = new CartListTable();
 		$list_table->prepare_items();
 
 		?>
@@ -309,7 +312,7 @@ class ACR_Admin {
 	 * Handle manual send email action from list table.
 	 */
 	public function handle_manual_email() {
-		if ( ! current_user_can( ACR_Helpers::get_manage_capability() ) ) {
+		if ( ! current_user_can( Helpers::get_manage_capability() ) ) {
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'auto-cart-recovery' ) );
 		}
 
@@ -322,7 +325,7 @@ class ACR_Admin {
 
 		check_admin_referer( 'acr_send_email_' . $cart_id );
 
-		ACR_Cron::send_recovery_for_cart( $cart_id );
+		Cron::send_recovery_for_cart( $cart_id );
 
 		wp_safe_redirect(
 			add_query_arg(
@@ -340,11 +343,11 @@ class ACR_Admin {
 	 * Render settings page.
 	 */
 	public function render_settings_page() {
-		if ( ! current_user_can( ACR_Helpers::get_manage_capability() ) ) {
+		if ( ! current_user_can( Helpers::get_manage_capability() ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'auto-cart-recovery' ) );
 		}
 
-		$settings = ACR_Helpers::get_settings();
+		$settings = Helpers::get_settings();
 
 		?>
 		<div class="wrap">
@@ -359,7 +362,7 @@ class ACR_Admin {
 						<th scope="row"><?php esc_html_e( 'Enable Recovery', 'auto-cart-recovery' ); ?></th>
 						<td>
 							<label>
-								<input type="checkbox" name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[enabled]" value="1" <?php checked( ! empty( $settings['enabled'] ) ); ?> />
+								<input type="checkbox" name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[enabled]" value="1" <?php checked( ! empty( $settings['enabled'] ) ); ?> />
 								<?php esc_html_e( 'Enable abandoned cart tracking and emails', 'auto-cart-recovery' ); ?>
 							</label>
 						</td>
@@ -368,13 +371,13 @@ class ACR_Admin {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Delay before email (minutes)', 'auto-cart-recovery' ); ?></th>
 						<td>
-							<input type="number" min="5" name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[delay_minutes]" value="<?php echo esc_attr( $settings['delay_minutes'] ); ?>" />
+							<input type="number" min="5" name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[delay_minutes]" value="<?php echo esc_attr( $settings['delay_minutes'] ); ?>" />
 						</td>
 					</tr>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Discount type', 'auto-cart-recovery' ); ?></th>
 						<td>
-							<select name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[discount_type]">
+							<select name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[discount_type]">
 								<option value="percent" <?php selected( $settings['discount_type'], 'percent' ); ?>><?php esc_html_e( 'Percentage discount', 'auto-cart-recovery' ); ?></option>
 								<option value="fixed_cart" <?php selected( $settings['discount_type'], 'fixed_cart' ); ?>><?php esc_html_e( 'Fixed cart discount', 'auto-cart-recovery' ); ?></option>
 							</select>
@@ -384,21 +387,21 @@ class ACR_Admin {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Discount amount', 'auto-cart-recovery' ); ?></th>
 						<td>
-							<input type="number" step="0.01" min="0" name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[discount_amount]" value="<?php echo esc_attr( $settings['discount_amount'] ); ?>" />
+							<input type="number" step="0.01" min="0" name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[discount_amount]" value="<?php echo esc_attr( $settings['discount_amount'] ); ?>" />
 						</td>
 					</tr>
 
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Coupon expiry (days)', 'auto-cart-recovery' ); ?></th>
 						<td>
-							<input type="number" min="0" name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[coupon_expiry_days]" value="<?php echo esc_attr( $settings['coupon_expiry_days'] ); ?>" />
+							<input type="number" min="0" name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[coupon_expiry_days]" value="<?php echo esc_attr( $settings['coupon_expiry_days'] ); ?>" />
 						</td>
 					</tr>
 
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Minimum cart total', 'auto-cart-recovery' ); ?></th>
 						<td>
-							<input type="number" step="0.01" min="0" name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[min_cart_total]" value="<?php echo esc_attr( $settings['min_cart_total'] ); ?>" />
+							<input type="number" step="0.01" min="0" name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[min_cart_total]" value="<?php echo esc_attr( $settings['min_cart_total'] ); ?>" />
 						</td>
 					</tr>
 
@@ -406,7 +409,7 @@ class ACR_Admin {
 						<th scope="row"><?php esc_html_e( 'Include guests', 'auto-cart-recovery' ); ?></th>
 						<td>
 							<label>
-								<input type="checkbox" name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[include_guests]" value="1" <?php checked( ! empty( $settings['include_guests'] ) ); ?> />
+								<input type="checkbox" name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[include_guests]" value="1" <?php checked( ! empty( $settings['include_guests'] ) ); ?> />
 								<?php esc_html_e( 'Track and email guest customers', 'auto-cart-recovery' ); ?>
 							</label>
 						</td>
@@ -415,35 +418,35 @@ class ACR_Admin {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'From name', 'auto-cart-recovery' ); ?></th>
 						<td>
-							<input type="text" class="regular-text" name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[from_name]" value="<?php echo esc_attr( $settings['from_name'] ); ?>" />
+							<input type="text" class="regular-text" name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[from_name]" value="<?php echo esc_attr( $settings['from_name'] ); ?>" />
 						</td>
 					</tr>
 
 					<tr>
 						<th scope="row"><?php esc_html_e( 'From email', 'auto-cart-recovery' ); ?></th>
 						<td>
-							<input type="email" class="regular-text" name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[from_email]" value="<?php echo esc_attr( $settings['from_email'] ); ?>" />
+							<input type="email" class="regular-text" name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[from_email]" value="<?php echo esc_attr( $settings['from_email'] ); ?>" />
 						</td>
 					</tr>
 
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Email subject', 'auto-cart-recovery' ); ?></th>
 						<td>
-							<input type="text" class="regular-text" name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[email_subject]" value="<?php echo esc_attr( $settings['email_subject'] ); ?>" />
+							<input type="text" class="regular-text" name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[email_subject]" value="<?php echo esc_attr( $settings['email_subject'] ); ?>" />
 						</td>
 					</tr>
 
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Email heading', 'auto-cart-recovery' ); ?></th>
 						<td>
-							<input type="text" class="regular-text" name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[email_heading]" value="<?php echo esc_attr( $settings['email_heading'] ); ?>" />
+							<input type="text" class="regular-text" name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[email_heading]" value="<?php echo esc_attr( $settings['email_heading'] ); ?>" />
 						</td>
 					</tr>
 
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Email body', 'auto-cart-recovery' ); ?></th>
 						<td>
-							<textarea name="<?php echo esc_attr( Auto_Cart_Recovery::OPTION_SETTINGS ); ?>[email_body]" rows="6" class="large-text"><?php echo esc_textarea( $settings['email_body'] ); ?></textarea>
+							<textarea name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[email_body]" rows="6" class="large-text"><?php echo esc_textarea( $settings['email_body'] ); ?></textarea>
 						</td>
 					</tr>
 				</table>

@@ -1,8 +1,11 @@
 <?php
+
+namespace AutoCartRecovery;
+
 /**
  * Email and coupon handling for Auto Cart Recovery.
  *
- * @package Auto_Cart_Recovery
+ * @package AutoCartRecovery
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Handles creation of WooCommerce coupons and sending recovery emails.
  */
-class ACR_Emails {
+class Emails {
 
 	/**
 	 * Maybe create WooCommerce coupon for a cart.

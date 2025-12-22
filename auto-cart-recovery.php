@@ -22,12 +22,12 @@ if ( ! class_exists( 'Auto_Cart_Recovery' ) ) {
 	 *
 	 * Final singleton, bootstrap for all components.
 	 */
-	final class Auto_Cart_Recovery {
+	final class AutoCartRecovery {
 
 		/**
 		 * Singleton instance.
 		 *
-		 * @var Auto_Cart_Recovery|null
+		 * @var AutoCartRecovery|null
 		 */
 		private static $instance = null;
 
