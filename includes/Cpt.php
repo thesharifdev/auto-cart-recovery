@@ -270,7 +270,7 @@ class Cpt {
 
 		$cart_id = (int) $query->posts[0];
 
-		update_post_meta( $cart_id, '_acr_status', ACR_Helpers::get_settings()['status_recovered'] );
+		update_post_meta( $cart_id, '_acr_status', Helpers::get_settings()['status_recovered'] );
 		update_post_meta( $cart_id, '_acr_recovered_order_id', $order_id );
 
 		/**

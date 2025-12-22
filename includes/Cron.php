@@ -39,7 +39,7 @@ class Cron {
 	 * Process abandoned carts and send recovery emails.
 	 */
 	public static function process_abandoned_carts() {
-		$settings = ACR_Helpers::get_settings();
+		$settings = Helpers::get_settings();
 
 		if ( empty( $settings['enabled'] ) ) {
 			return;
@@ -96,7 +96,7 @@ class Cron {
 			return;
 		}
 
-		$settings = ACR_Helpers::get_settings();
+		$settings = Helpers::get_settings();
 
 		if ( empty( $settings['enabled'] ) ) {
 			return;
@@ -140,7 +140,7 @@ class Cron {
 		update_post_meta( $cart_id, '_acr_token_created', current_time( 'timestamp' ) );
 
 		// Send email via wp_mail.
-		$sent = ACR_Emails::send_recovery_email( $cart_id, $email, $url, $coupon_id, $settings );
+		$sent = Emails::send_recovery_email( $cart_id, $email, $url, $coupon_id, $settings );
 
 		if ( $sent ) {
 			update_post_meta( $cart_id, '_acr_email_count', $already_sent + 1 );

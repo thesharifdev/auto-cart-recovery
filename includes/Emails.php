@@ -42,7 +42,7 @@ class Emails {
 
 		// Generate a coupon code, with a safe fallback if WooCommerce helper is not available.
 		if ( function_exists( 'wc_generate_coupon_code' ) ) {
-			$raw_code = wc_generate_coupon_code();
+			$raw_code = \wc_generate_coupon_code();
 		} else {
 			$raw_code = strtolower( wp_generate_password( 10, false, false ) );
 		}
