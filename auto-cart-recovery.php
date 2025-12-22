@@ -80,8 +80,12 @@ if ( ! class_exists( 'AutoCartRecovery' ) ) {
 		 * Private to enforce singleton.
 		 */
 		private function __construct() {
+
+			if(file_exists( __DIR__ . '/vendor/autoload.php' )){
+				require_once __DIR__ . '/vendor/autoload.php';
+			}
+
 			$this->define_constants();
-			$this->includes();
 			$this->init_hooks();
 		}
 
@@ -122,6 +126,7 @@ if ( ! class_exists( 'AutoCartRecovery' ) ) {
 		 * Init hooks.
 		 */
 		private function init_hooks() {
+			
 			add_action( 'init', array( 'CPT', 'register_post_type' ) );
 			add_action( 'init', array( 'Recovery', 'register_rewrite' ) );
 			add_filter( 'query_vars', array( 'Recovery', 'add_query_vars' ) );
