@@ -15,11 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use AutoCartRecovery\Cpt;
-use AutoCartRecovery\Recovery;
-use AutoCartRecovery\Cron;
-use AutoCartRecovery\Admin;
-
 if ( ! class_exists( 'AutoCartRecovery' ) ) {
 
 	/**
@@ -127,21 +122,22 @@ if ( ! class_exists( 'AutoCartRecovery' ) ) {
 		 */
 		private function init_hooks() {
 			
-			add_action( 'init', array( 'CPT', 'register_post_type' ) );
-			add_action( 'init', array( 'Recovery', 'register_rewrite' ) );
-			add_filter( 'query_vars', array( 'Recovery', 'add_query_vars' ) );
-			add_action( 'template_redirect', array( 'Recovery', 'handle_recovery_request' ) );
+			add_action( 'init', array( '\AutoCartRecovery\CPT', 'register_post_type' ) );
+			add_action( 'init', array( '\AutoCartRecovery\Recovery', 'register_rewrite' ) );
+			add_filter( 'query_vars', array( '\AutoCartRecovery\Recovery', 'add_query_vars' ) );
+			add_action( 'template_redirect', array( '\AutoCartRecovery\Recovery', 'handle_recovery_request' ) );
 
 			// Cron.
-			add_filter( 'cron_schedules', array( 'Cron', 'add_custom_schedules' ) );
-			add_action( self::CRON_HOOK, array( 'Cron', 'process_abandoned_carts' ) );
+			add_filter( 'cron_schedules', array( '\AutoCartRecovery\Cron', 'add_custom_schedules' ) );
+			add_action( self::CRON_HOOK, array( '\AutoCartRecovery\Cron', 'process_abandoned_carts' ) );
+			
 			// WooCommerce cart hooks to track and store abandoned carts.
-			add_action( 'woocommerce_cart_updated', array( 'CPT', 'maybe_capture_cart' ) );
-			add_action( 'woocommerce_thankyou', array( 'CPT', 'mark_cart_recovered_on_order' ), 10, 1 );
+			add_action( 'woocommerce_cart_updated', array( '\AutoCartRecovery\CPT', 'maybe_capture_cart' ) );
+			add_action( 'woocommerce_thankyou', array( '\AutoCartRecovery\CPT', 'mark_cart_recovered_on_order' ), 10, 1 );
 
 			// Admin.
 			if ( is_admin() ) {
-				Admin::get_instance();
+				\AutoCartRecovery\Admin::get_instance();
 			}
 
 			/**
@@ -157,7 +153,7 @@ if ( ! class_exists( 'AutoCartRecovery' ) ) {
 /**
  * Helper function to retrieve main instance.
  *
- * @return Auto_Cart_Recovery
+ * @return AutoCartRecovery
  */
 function acr() {
 	return AutoCartRecovery::get_instance();
@@ -176,8 +172,8 @@ register_activation_hook( __FILE__, 'acr_activation' );
  */
 function acr_activation() {
 	// Register CPT and rewrite before flushing.
-	CPT::register_post_type();
-	Recovery::register_rewrite();
+	\AutoCartRecovery\CPT::register_post_type();
+	\AutoCartRecovery\Recovery::register_rewrite();
 
 	flush_rewrite_rules();
 
