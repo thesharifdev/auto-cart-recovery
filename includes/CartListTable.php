@@ -1,8 +1,11 @@
 <?php
+
+namespace AutoCartRecovery;
+
 /**
  * WP_List_Table implementation for abandoned carts.
  *
- * @package Auto_Cart_Recovery
+ * @package AutoCartRecovery
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -16,7 +19,7 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
 /**
  * Abandoned carts list table.
  */
-class ACR_Abandoned_Cart_List_Table extends WP_List_Table {
+class CartListTable extends \WP_List_Table {
 
 	/**
 	 * Constructor.
@@ -61,13 +64,13 @@ class ACR_Abandoned_Cart_List_Table extends WP_List_Table {
 		$this->_column_headers = array( $columns, $hidden, $sortable );
 
 		$args = array(
-			'post_type'      => Auto_Cart_Recovery::CPT_SLUG,
+			'post_type'      => \AutoCartRecovery::CPT_SLUG,
 			'post_status'    => 'publish',
 			'posts_per_page' => $per_page,
 			'paged'          => $current_page,
 		);
 
-		$query = new WP_Query( $args );
+		$query = new \WP_Query( $args );
 
 		$this->items = array();
 

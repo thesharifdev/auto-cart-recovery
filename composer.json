@@ -1,0 +1,9 @@
+{
+  "name": "sharif/auto-cart-recovery",
+  "type": "wordpress-plugin",
+  "autoload": {
+    "psr-4": {
+      "AutoCartRecovery\\": "includes/"
+    }
+  }
+}

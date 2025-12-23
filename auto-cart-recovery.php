@@ -1,40 +1,40 @@
 <?php
 /**
  * Plugin Name:       Auto Cart Recovery
- * Description:       Recover abandoned WooCommerce carts using native WordPress systems (CPT, cron, transients, wp_mail, and WooCommerce coupons).
- * Version:           1.0.0
- * Author:            Your Name
+ * Description:       Recover abandoned WooCommerce carts.
+ * Version:           1.0.1
+ * Author:            Sharif
  * Text Domain:       auto-cart-recovery
  * Domain Path:       /languages
  * Requires Plugins:  woocommerce
  *
- * @package Auto_Cart_Recovery
+ * @package AutoCartRecovery
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( 'Auto_Cart_Recovery' ) ) {
+if ( ! class_exists( 'AutoCartRecovery' ) ) {
 
 	/**
 	 * Main plugin class.
 	 *
 	 * Final singleton, bootstrap for all components.
 	 */
-	final class Auto_Cart_Recovery {
+	final class AutoCartRecovery {
 
 		/**
 		 * Singleton instance.
 		 *
-		 * @var Auto_Cart_Recovery|null
+		 * @var AutoCartRecovery|null
 		 */
 		private static $instance = null;
 
 		/**
 		 * Plugin version.
 		 */
-		const VERSION = '1.0.0';
+		const VERSION = '1.0.1';
 
 		/**
 		 * Option key for settings.
@@ -59,7 +59,7 @@ if ( ! class_exists( 'Auto_Cart_Recovery' ) ) {
 		/**
 		 * Get singleton instance.
 		 *
-		 * @return Auto_Cart_Recovery
+		 * @return AutoCartRecovery
 		 */
 		public static function get_instance() {
 			if ( null === self::$instance ) {
@@ -75,8 +75,12 @@ if ( ! class_exists( 'Auto_Cart_Recovery' ) ) {
 		 * Private to enforce singleton.
 		 */
 		private function __construct() {
+
+			if(file_exists( __DIR__ . '/vendor/autoload.php' )){
+				require_once __DIR__ . '/vendor/autoload.php';
+			}
+
 			$this->define_constants();
-			$this->includes();
 			$this->init_hooks();
 		}
 
@@ -114,38 +118,26 @@ if ( ! class_exists( 'Auto_Cart_Recovery' ) ) {
 		}
 
 		/**
-         * Include required files.
-         */
-		private function includes() {
-			require_once ACR_PLUGIN_DIR . 'includes/class-acr-cpt.php';
-			require_once ACR_PLUGIN_DIR . 'includes/class-acr-cron.php';
-			require_once ACR_PLUGIN_DIR . 'includes/class-acr-recovery.php';
-			require_once ACR_PLUGIN_DIR . 'includes/class-acr-admin.php';
-			require_once ACR_PLUGIN_DIR . 'includes/class-acr-emails.php';
-			require_once ACR_PLUGIN_DIR . 'includes/class-acr-list-table.php';
-			require_once ACR_PLUGIN_DIR . 'includes/class-acr-helpers.php';
-		}
-
-		/**
 		 * Init hooks.
 		 */
 		private function init_hooks() {
-			add_action( 'init', array( 'ACR_CPT', 'register_post_type' ) );
-			add_action( 'init', array( 'ACR_Recovery', 'register_rewrite' ) );
-			add_filter( 'query_vars', array( 'ACR_Recovery', 'add_query_vars' ) );
-			add_action( 'template_redirect', array( 'ACR_Recovery', 'handle_recovery_request' ) );
+			
+			add_action( 'init', array( '\AutoCartRecovery\CPT', 'register_post_type' ) );
+			add_action( 'init', array( '\AutoCartRecovery\Recovery', 'register_rewrite' ) );
+			add_filter( 'query_vars', array( '\AutoCartRecovery\Recovery', 'add_query_vars' ) );
+			add_action( 'template_redirect', array( '\AutoCartRecovery\Recovery', 'handle_recovery_request' ) );
 
 			// Cron.
-			add_filter( 'cron_schedules', array( 'ACR_Cron', 'add_custom_schedules' ) );
-			add_action( self::CRON_HOOK, array( 'ACR_Cron', 'process_abandoned_carts' ) );
-
+			add_filter( 'cron_schedules', array( '\AutoCartRecovery\Cron', 'add_custom_schedules' ) );
+			add_action( self::CRON_HOOK, array( '\AutoCartRecovery\Cron', 'process_abandoned_carts' ) );
+			
 			// WooCommerce cart hooks to track and store abandoned carts.
-			add_action( 'woocommerce_cart_updated', array( 'ACR_CPT', 'maybe_capture_cart' ) );
-			add_action( 'woocommerce_thankyou', array( 'ACR_CPT', 'mark_cart_recovered_on_order' ), 10, 1 );
+			add_action( 'woocommerce_cart_updated', array( '\AutoCartRecovery\CPT', 'maybe_capture_cart' ) );
+			add_action( 'woocommerce_thankyou', array( '\AutoCartRecovery\CPT', 'mark_cart_recovered_on_order' ), 10, 1 );
 
 			// Admin.
 			if ( is_admin() ) {
-				ACR_Admin::get_instance();
+				\AutoCartRecovery\Admin::get_instance();
 			}
 
 			/**
@@ -161,10 +153,10 @@ if ( ! class_exists( 'Auto_Cart_Recovery' ) ) {
 /**
  * Helper function to retrieve main instance.
  *
- * @return Auto_Cart_Recovery
+ * @return AutoCartRecovery
  */
 function acr() {
-	return Auto_Cart_Recovery::get_instance();
+	return AutoCartRecovery::get_instance();
 }
 
 // Bootstrap plugin.
@@ -180,19 +172,19 @@ register_activation_hook( __FILE__, 'acr_activation' );
  */
 function acr_activation() {
 	// Register CPT and rewrite before flushing.
-	ACR_CPT::register_post_type();
-	ACR_Recovery::register_rewrite();
+	\AutoCartRecovery\CPT::register_post_type();
+	\AutoCartRecovery\Recovery::register_rewrite();
 
 	flush_rewrite_rules();
 
 	// Schedule cron.
-	if ( ! wp_next_scheduled( Auto_Cart_Recovery::CRON_HOOK ) ) {
-		wp_schedule_event( time(), 'fifteen_minutes', Auto_Cart_Recovery::CRON_HOOK );
+	if ( ! wp_next_scheduled( AutoCartRecovery::CRON_HOOK ) ) {
+		wp_schedule_event( time(), 'five_minutes', AutoCartRecovery::CRON_HOOK );
 	}
 
 	// Set activation time and version.
 	update_option( 'acr_activation_time', current_time( 'timestamp' ) );
-	update_option( 'acr_plugin_version', Auto_Cart_Recovery::VERSION );
+	update_option( 'acr_plugin_version', AutoCartRecovery::VERSION );
 
 	/**
 	 * Fired after Auto Cart Recovery activation completes.
@@ -211,10 +203,10 @@ register_deactivation_hook( __FILE__, 'acr_deactivation' );
  * On deactivation - clear cron and flush rules.
  */
 function acr_deactivation() {
-	$timestamp = wp_next_scheduled( Auto_Cart_Recovery::CRON_HOOK );
+	$timestamp = wp_next_scheduled( AutoCartRecovery::CRON_HOOK );
 
 	if ( $timestamp ) {
-		wp_unschedule_event( $timestamp, Auto_Cart_Recovery::CRON_HOOK );
+		wp_unschedule_event( $timestamp, AutoCartRecovery::CRON_HOOK );
 	}
 
 	flush_rewrite_rules();
@@ -227,68 +219,5 @@ function acr_deactivation() {
 	do_action( 'acr_deactivated' );
 }
 
-/**
- * Uninstall hook.
- */
-register_uninstall_hook( __FILE__, 'acr_uninstall' );
-
-/**
- * On uninstall - clean up data.
- */
-function acr_uninstall() {
-	// Delete CPT posts.
-	$carts = get_posts(
-		array(
-			'post_type'      => Auto_Cart_Recovery::CPT_SLUG,
-			'posts_per_page' => -1,
-			'post_status'    => 'any',
-			'fields'         => 'ids',
-		)
-	);
-
-	foreach ( $carts as $cart_id ) {
-		wp_delete_post( $cart_id, true );
-	}
-
-	// Optional: delete generated coupons (shop_coupon CPT) created by this plugin.
-	/**
-	 * Filter whether Auto Cart Recovery should delete generated coupons on uninstall.
-	 *
-	 * @param bool $delete_coupons Default false.
-	 */
-	$delete_coupons = apply_filters( 'acr_delete_coupons_on_uninstall', false );
-
-	if ( $delete_coupons ) {
-		$coupons = get_posts(
-			array(
-				'post_type'      => 'shop_coupon',
-				'posts_per_page' => -1,
-				'post_status'    => 'any',
-				'fields'         => 'ids',
-				'meta_key'       => '_acr_coupon',
-				'meta_value'     => 'yes',
-			)
-		);
-
-		foreach ( $coupons as $coupon_id ) {
-			wp_delete_post( $coupon_id, true );
-		}
-	}
-
-	// Delete options.
-	delete_option( 'acr_activation_time' );
-	delete_option( 'acr_plugin_version' );
-	delete_option( Auto_Cart_Recovery::OPTION_SETTINGS );
-
-	// Delete transients.
-	delete_transient( 'acr_dashboard_stats' );
-
-	/**
-	 * Fired after Auto Cart Recovery uninstall cleanup.
-	 *
-	 * @since 1.0.0
-	 */
-	do_action( 'acr_uninstalled' );
-}
 
 

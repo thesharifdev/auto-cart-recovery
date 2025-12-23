@@ -1,8 +1,11 @@
 <?php
+
+namespace AutoCartRecovery;
+
 /**
  * Email and coupon handling for Auto Cart Recovery.
  *
- * @package Auto_Cart_Recovery
+ * @package AutoCartRecovery
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Handles creation of WooCommerce coupons and sending recovery emails.
  */
-class ACR_Emails {
+class Emails {
 
 	/**
 	 * Maybe create WooCommerce coupon for a cart.
@@ -39,7 +42,7 @@ class ACR_Emails {
 
 		// Generate a coupon code, with a safe fallback if WooCommerce helper is not available.
 		if ( function_exists( 'wc_generate_coupon_code' ) ) {
-			$raw_code = wc_generate_coupon_code();
+			$raw_code = \wc_generate_coupon_code();
 		} else {
 			$raw_code = strtolower( wp_generate_password( 10, false, false ) );
 		}

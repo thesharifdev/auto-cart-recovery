@@ -32,7 +32,7 @@ Installation
 After activation:
 
 - A custom post type `acr_abandoned_cart` is registered.
-- A cron event `acr_process_abandoned_carts` is scheduled every 15 minutes.
+- A cron event `acr_process_abandoned_carts` is scheduled every 5 minutes.
 - Basic options and transients are created.
 
 Where to Find It in Admin
@@ -80,7 +80,7 @@ If your settings are misconfigured (e.g. amount `0`), the plugin falls back to a
 
 ### 3. Scheduling and automatic emails
 
-- A WordPress cron job (`acr_process_abandoned_carts`) runs every 15 minutes.
+- A WordPress cron job (`acr_process_abandoned_carts`) runs every 5 minutes.
 - For each **new** cart whose last update time is older than the configured delay (in minutes), it:
   1. Generates a secure recovery token.
   2. Builds a recovery URL that includes the token (e.g. `/acr/recover/{token}/`).

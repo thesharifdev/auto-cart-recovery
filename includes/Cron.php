@@ -1,8 +1,11 @@
 <?php
+
+namespace AutoCartRecovery;
+
 /**
  * Cron handling for Auto Cart Recovery.
  *
- * @package Auto_Cart_Recovery
+ * @package AutoCartRecovery
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Handles scheduling and processing abandoned carts.
  */
-class ACR_Cron {
+class Cron {
 
 	/**
 	 * Register custom schedules.
@@ -22,10 +25,10 @@ class ACR_Cron {
 	 * @return array
 	 */
 	public static function add_custom_schedules( $schedules ) {
-		if ( ! isset( $schedules['fifteen_minutes'] ) ) {
-			$schedules['fifteen_minutes'] = array(
-				'interval' => 15 * 60,
-				'display'  => __( 'Every 15 minutes', 'auto-cart-recovery' ),
+		if ( ! isset( $schedules['five_minutes'] ) ) {
+			$schedules['five_minutes'] = array(
+				'interval' => 5 * 60,
+				'display'  => __( 'Every 5 minutes', 'auto-cart-recovery' ),
 			);
 		}
 
@@ -36,7 +39,7 @@ class ACR_Cron {
 	 * Process abandoned carts and send recovery emails.
 	 */
 	public static function process_abandoned_carts() {
-		$settings = ACR_Helpers::get_settings();
+		$settings = Helpers::get_settings();
 
 		if ( empty( $settings['enabled'] ) ) {
 			return;
@@ -58,9 +61,9 @@ class ACR_Cron {
 			),
 		);
 
-		$query = new WP_Query(
+		$query = new \WP_Query(
 			array(
-				'post_type'      => Auto_Cart_Recovery::CPT_SLUG,
+				'post_type'      => \AutoCartRecovery::CPT_SLUG,
 				'post_status'    => 'publish',
 				'posts_per_page' => 50,
 				'fields'         => 'ids',
@@ -93,7 +96,7 @@ class ACR_Cron {
 			return;
 		}
 
-		$settings = ACR_Helpers::get_settings();
+		$settings = Helpers::get_settings();
 
 		if ( empty( $settings['enabled'] ) ) {
 			return;
@@ -107,7 +110,7 @@ class ACR_Cron {
 	 *
 	 * @param int   $cart_id  Cart post ID.
 	 * @param array $settings Settings.
-	 * @param bool  $manual   Whether this is a manual send (ignores max_reminders).
+	 * @param bool  $manual   Whether this is a manual trigger.
 	 */
 	protected static function process_single_cart( $cart_id, $settings, $manual = false ) {
 		$email = get_post_meta( $cart_id, '_acr_email', true );
@@ -117,19 +120,16 @@ class ACR_Cron {
 			return;
 		}
 
+		// Update status to abandoned when the delay period has passed.
+		update_post_meta( $cart_id, '_acr_status', $settings['status_abandoned'] );
+
 		$already_sent = (int) get_post_meta( $cart_id, '_acr_email_count', true );
 
-		// For automatic cron sends, respect max_reminders and update status.
-		if ( ! $manual && $already_sent >= (int) $settings['max_reminders'] ) {
-			update_post_meta( $cart_id, '_acr_status', $settings['status_abandoned'] );
-			return;
-		}
-
 		// Generate token and coupon.
-		$token = ACR_Helpers::generate_token();
-		$url   = ACR_Helpers::get_recovery_url( $token );
+		$token = Helpers::generate_token();
+		$url   = Helpers::get_recovery_url( $token );
 
-		$coupon_id = ACR_Emails::maybe_create_coupon_for_cart( $cart_id, $settings );
+		$coupon_id = Emails::maybe_create_coupon_for_cart( $cart_id, $settings );
 
 		if ( $coupon_id ) {
 			update_post_meta( $cart_id, '_acr_coupon_id', $coupon_id );
@@ -139,7 +139,7 @@ class ACR_Cron {
 		update_post_meta( $cart_id, '_acr_token_created', current_time( 'timestamp' ) );
 
 		// Send email via wp_mail.
-		$sent = ACR_Emails::send_recovery_email( $cart_id, $email, $url, $coupon_id, $settings );
+		$sent = Emails::send_recovery_email( $cart_id, $email, $url, $coupon_id, $settings );
 
 		if ( $sent ) {
 			update_post_meta( $cart_id, '_acr_email_count', $already_sent + 1 );

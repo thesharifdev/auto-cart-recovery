@@ -1,8 +1,11 @@
 <?php
+
+namespace AutoCartRecovery;
+
 /**
  * CPT and cart storage for Auto Cart Recovery.
  *
- * @package Auto_Cart_Recovery
+ * @package AutoCartRecovery
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Handles custom post type and meta for abandoned carts.
  */
-class ACR_CPT {
+class Cpt {
 
 	/**
 	 * Register CPT.
@@ -45,7 +48,7 @@ class ACR_CPT {
 			'supports'           => array( 'title' ),
 		);
 
-		register_post_type( Auto_Cart_Recovery::CPT_SLUG, $args );
+		register_post_type( \AutoCartRecovery::CPT_SLUG, $args );
 	}
 
 	/**
@@ -56,13 +59,13 @@ class ACR_CPT {
 			return;
 		}
 
-		$settings = ACR_Helpers::get_settings();
+		$settings = Helpers::get_settings();
 
 		if ( empty( $settings['enabled'] ) ) {
 			return;
 		}
 
-		$cart = WC()->cart;
+		$cart = \WC()->cart;
 
 		if ( ! $cart || $cart->is_empty() ) {
 			return;
@@ -76,14 +79,14 @@ class ACR_CPT {
 
 		// Identify customer.
 		$user_id    = get_current_user_id();
-		$session_id = WC()->session ? WC()->session->get_customer_id() : '';
+		$session_id = \WC()->session ? \WC()->session->get_customer_id() : '';
 		$email      = '';
 
 		if ( is_user_logged_in() ) {
 			$user  = wp_get_current_user();
 			$email = ! empty( $user->user_email ) ? $user->user_email : '';
-		} elseif ( ! empty( WC()->customer ) ) {
-			$email = WC()->customer->get_billing_email();
+		} elseif ( ! empty( \WC()->customer ) ) {
+			$email = \WC()->customer->get_billing_email();
 		}
 
 		if ( empty( $email ) && empty( $settings['include_guests'] ) ) {
@@ -115,7 +118,7 @@ class ACR_CPT {
 		$existing_id = self::get_existing_cart_for_customer( $user_id, $session_id, $email );
 
 		$args = array(
-			'post_type'   => Auto_Cart_Recovery::CPT_SLUG,
+			'post_type'   => \AutoCartRecovery::CPT_SLUG,
 			'post_status' => 'publish',
 			'post_title'  => sprintf(
 				/* translators: %s: customer identifier */
@@ -149,7 +152,7 @@ class ACR_CPT {
 
 		// Ensure a coupon exists for this cart at capture time.
 		if ( ! get_post_meta( $cart_id, '_acr_coupon_id', true ) ) {
-			$coupon_id = ACR_Emails::maybe_create_coupon_for_cart( $cart_id, $settings );
+			$coupon_id = Emails::maybe_create_coupon_for_cart( $cart_id, $settings );
 
 			if ( $coupon_id ) {
 				update_post_meta( $cart_id, '_acr_coupon_id', $coupon_id );
@@ -204,9 +207,9 @@ class ACR_CPT {
 			return 0;
 		}
 
-		$query = new WP_Query(
+		$query = new \WP_Query(
 			array(
-				'post_type'      => Auto_Cart_Recovery::CPT_SLUG,
+				'post_type'      => \AutoCartRecovery::CPT_SLUG,
 				'posts_per_page' => 1,
 				'post_status'    => 'publish',
 				'meta_query'     => $meta_query,
@@ -243,9 +246,9 @@ class ACR_CPT {
 			return;
 		}
 
-		$query = new WP_Query(
+		$query = new \WP_Query(
 			array(
-				'post_type'      => Auto_Cart_Recovery::CPT_SLUG,
+				'post_type'      => \AutoCartRecovery::CPT_SLUG,
 				'posts_per_page' => 1,
 				'post_status'    => 'publish',
 				'fields'         => 'ids',
@@ -267,7 +270,7 @@ class ACR_CPT {
 
 		$cart_id = (int) $query->posts[0];
 
-		update_post_meta( $cart_id, '_acr_status', ACR_Helpers::get_settings()['status_recovered'] );
+		update_post_meta( $cart_id, '_acr_status', Helpers::get_settings()['status_recovered'] );
 		update_post_meta( $cart_id, '_acr_recovered_order_id', $order_id );
 
 		/**

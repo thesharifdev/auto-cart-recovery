@@ -1,8 +1,11 @@
 <?php
+
+namespace AutoCartRecovery;
+
 /**
  * Recovery link handling for Auto Cart Recovery.
  *
- * @package Auto_Cart_Recovery
+ * @package AutoCartRecovery
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Handles recovery links and restoring carts.
  */
-class ACR_Recovery {
+class Recovery {
 
 	/**
 	 * Register rewrite rule for pretty recovery URLs.
@@ -20,7 +23,7 @@ class ACR_Recovery {
 	public static function register_rewrite() {
 		add_rewrite_rule(
 			'acr/recover/([^/]+)/?$',
-			'index.php?' . Auto_Cart_Recovery::RECOVERY_QUERY_VAR . '=$matches[1]',
+			'index.php?' . \AutoCartRecovery::RECOVERY_QUERY_VAR . '=$matches[1]',
 			'top'
 		);
 	}
@@ -33,7 +36,7 @@ class ACR_Recovery {
 	 * @return array
 	 */
 	public static function add_query_vars( $vars ) {
-		$vars[] = Auto_Cart_Recovery::RECOVERY_QUERY_VAR;
+		$vars[] = \AutoCartRecovery::RECOVERY_QUERY_VAR;
 		return $vars;
 	}
 
@@ -45,7 +48,7 @@ class ACR_Recovery {
 			return;
 		}
 
-		$token = get_query_var( Auto_Cart_Recovery::RECOVERY_QUERY_VAR );
+		$token = get_query_var( \AutoCartRecovery::RECOVERY_QUERY_VAR );
 
 		if ( ! $token ) {
 			return;
@@ -56,12 +59,11 @@ class ACR_Recovery {
 		$cart_id = self::get_cart_by_token( $token );
 
 		if ( ! $cart_id ) {
-			wp_safe_redirect( wc_get_cart_url() );
+			wp_safe_redirect( \wc_get_cart_url() );
 			exit;
 		}
 
-		$settings = ACR_Helpers::get_settings();
-
+		$settings = Helpers::get_settings();
 		// Optional expiry check.
 		$created = (int) get_post_meta( $cart_id, '_acr_token_created', true );
 
@@ -69,7 +71,7 @@ class ACR_Recovery {
 			$expires = $created + ( (int) $settings['coupon_expiry_days'] * DAY_IN_SECONDS );
 
 			if ( current_time( 'timestamp' ) > $expires ) {
-				wp_safe_redirect( wc_get_cart_url() );
+				wp_safe_redirect( \wc_get_cart_url() );
 				exit;
 			}
 		}
@@ -100,7 +102,7 @@ class ACR_Recovery {
 		do_action( 'acr_recovery_link_used', $cart_id );
 
 		// Redirect directly to checkout with restored cart and applied coupon.
-		wp_safe_redirect( wc_get_checkout_url() );
+		wp_safe_redirect( \wc_get_checkout_url() );
 		exit;
 	}
 
@@ -112,9 +114,9 @@ class ACR_Recovery {
 	 * @return int
 	 */
 	protected static function get_cart_by_token( $token ) {
-		$query = new WP_Query(
+		$query = new \WP_Query(
 			array(
-				'post_type'      => Auto_Cart_Recovery::CPT_SLUG,
+				'post_type'      => \AutoCartRecovery::CPT_SLUG,
 				'post_status'    => 'publish',
 				'posts_per_page' => 1,
 				'fields'         => 'ids',
@@ -152,7 +154,7 @@ class ACR_Recovery {
 			return;
 		}
 
-		WC()->cart->empty_cart();
+		\WC()->cart->empty_cart();
 
 		foreach ( $items as $item ) {
 			$product_id   = isset( $item['product_id'] ) ? (int) $item['product_id'] : 0;
@@ -162,7 +164,7 @@ class ACR_Recovery {
 			$cart_data    = isset( $item['cart_item_data'] ) ? (array) $item['cart_item_data'] : array();
 
 			if ( $product_id ) {
-				WC()->cart->add_to_cart( $product_id, $quantity, $variation_id, $variation, $cart_data );
+				\WC()->cart->add_to_cart( $product_id, $quantity, $variation_id, $variation, $cart_data );
 			}
 		}
 	}
