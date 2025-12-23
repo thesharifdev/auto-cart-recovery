@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</tr>
 
 			<tr>
-				<th scope="row"><?php esc_html_e( 'Delay before email (minutes)', 'auto-cart-recovery' ); ?></th>
+				<th scope="row"><?php esc_html_e( 'Minutes before cart is considered abandoned', 'auto-cart-recovery' ); ?></th>
 				<td>
 					<input type="number" min="5" name="<?php echo esc_attr( \AutoCartRecovery::OPTION_SETTINGS ); ?>[delay_minutes]" value="<?php echo esc_attr( $settings['delay_minutes'] ); ?>" />
 				</td>
