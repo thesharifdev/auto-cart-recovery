@@ -25,8 +25,8 @@ class Cron {
 	 * @return array
 	 */
 	public static function add_custom_schedules( $schedules ) {
-		if ( ! isset( $schedules['fifteen_minutes'] ) ) {
-			$schedules['fifteen_minutes'] = array(
+		if ( ! isset( $schedules['five_minutes'] ) ) {
+			$schedules['five_minutes'] = array(
 				'interval' => 5 * 60,
 				'display'  => __( 'Every 5 minutes', 'auto-cart-recovery' ),
 			);
@@ -110,6 +110,7 @@ class Cron {
 	 *
 	 * @param int   $cart_id  Cart post ID.
 	 * @param array $settings Settings.
+	 * @param bool  $manual   Whether this is a manual trigger.
 	 */
 	protected static function process_single_cart( $cart_id, $settings, $manual = false ) {
 		$email = get_post_meta( $cart_id, '_acr_email', true );
@@ -119,12 +120,10 @@ class Cron {
 			return;
 		}
 
-		$already_sent = (int) get_post_meta( $cart_id, '_acr_email_count', true );
+		// Update status to abandoned when the delay period has passed.
+		update_post_meta( $cart_id, '_acr_status', $settings['status_abandoned'] );
 
-		if ( ! $manual ) {
-			update_post_meta( $cart_id, '_acr_status', $settings['status_abandoned'] );
-			return;
-		}
+		$already_sent = (int) get_post_meta( $cart_id, '_acr_email_count', true );
 
 		// Generate token and coupon.
 		$token = Helpers::generate_token();

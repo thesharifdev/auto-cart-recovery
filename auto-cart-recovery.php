@@ -179,7 +179,7 @@ function acr_activation() {
 
 	// Schedule cron.
 	if ( ! wp_next_scheduled( AutoCartRecovery::CRON_HOOK ) ) {
-		wp_schedule_event( time(), 'fifteen_minutes', AutoCartRecovery::CRON_HOOK );
+		wp_schedule_event( time(), 'five_minutes', AutoCartRecovery::CRON_HOOK );
 	}
 
 	// Set activation time and version.
