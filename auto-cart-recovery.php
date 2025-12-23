@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Auto Cart Recovery
  * Description:       Recover abandoned WooCommerce carts.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            Sharif
  * Text Domain:       auto-cart-recovery
  * Domain Path:       /languages
@@ -34,7 +34,7 @@ if ( ! class_exists( 'AutoCartRecovery' ) ) {
 		/**
 		 * Plugin version.
 		 */
-		const VERSION = '1.0.0';
+		const VERSION = '1.0.1';
 
 		/**
 		 * Option key for settings.

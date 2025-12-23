@@ -4,7 +4,7 @@ Tags: woocommerce, abandoned cart, cart recovery, email, coupons
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 Requires Plugins: woocommerce
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -77,6 +77,11 @@ Coupons are standard WooCommerce coupons, tagged with `_acr_coupon = yes`.
 No. All data is stored using custom post types, post meta, and WooCommerce coupons.
 
 == Changelog ==
+= 1.0.1 =
+* Improved: Usual file loading to PSR-4 file loading.
+* Improved: Script using from separte file and check the plugin page for perfomance optimization.
+* Improved: Markup load from separte files.
+* Improved: File structure and code quality as PSR-4 standard.
 
 = 1.0.0 =
 * Initial release
@@ -86,11 +91,6 @@ No. All data is stored using custom post types, post meta, and WooCommerce coupo
 * Dashboard stats and reporting
 * Manual email sending
 * Cart restoration and auto-apply coupons
-
-== Upgrade Notice ==
-
-= 1.0.0 =
-Initial release.
 
 == Developer Notes ==
 
