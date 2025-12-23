@@ -254,7 +254,7 @@ class Admin {
 		$list_table = new CartListTable();
 		$list_table->prepare_items();
 
-		require_once __DIR__ . '/views/carts.php';
+		require_once __DIR__ . '/views/abandoned-card-list.php';
 	}
 
 	/**
